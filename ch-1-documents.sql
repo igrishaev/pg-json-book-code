@@ -136,3 +136,42 @@ select * from eav order by e;
 │ 10006 │ profile/job     │ cook       │
 │ 10006 │ profile/is-open │ true       │
 └───────┴─────────────────┴────────────┘
+
+create table contractors (
+    id uuid primary key,
+    title text
+);
+
+insert into contractors values (
+    'bd6a0da9-fe35-4a37-846c-dff3f32cf0ac',
+    'Acme Inc'
+);
+
+create table contract (
+    id uuid primary key,
+    number integer,
+    created_at date,
+    expires_at date,
+    contractor uuid references contractors(id),
+    amount integer,
+    currency text
+);
+
+insert into contract values (
+    'c2a44fe0-6840-4916-b6dd-b401f34f9c2a',
+    523552,
+    '2025-01-01',
+    '2027-12-31',
+    'bd6a0da9-fe35-4a37-846c-dff3f32cf0ac',
+    100000000,
+    'EUR'
+);
+
+select * from contract c, contractors cs
+where c.contractor = cs.id;
+
+┌──────────────────────────────────────┬────────┬────────────┬────────────┬──────────────────────────────────────┬───────────┬──────────┬──────────────────────────────────────┬──────────┐
+│                  id                  │ number │ created_at │ expires_at │              contractor              │  amount   │ currency │                  id                  │  title   │
+├──────────────────────────────────────┼────────┼────────────┼────────────┼──────────────────────────────────────┼───────────┼──────────┼──────────────────────────────────────┼──────────┤
+│ c2a44fe0-6840-4916-b6dd-b401f34f9c2a │ 523552 │ 2025-01-01 │ 2027-12-31 │ bd6a0da9-fe35-4a37-846c-dff3f32cf0ac │ 100000000 │ EUR      │ bd6a0da9-fe35-4a37-846c-dff3f32cf0ac │ Acme Inc │
+└──────────────────────────────────────┴────────┴────────────┴────────────┴──────────────────────────────────────┴───────────┴──────────┴──────────────────────────────────────┴──────────┘

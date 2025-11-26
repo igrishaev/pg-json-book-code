@@ -18,41 +18,93 @@
 }
 
 
-    id                  -> "123456"
-    title               -> "Some Document"
-    attrs.code          -> 662234
-    attrs.created_at    -> 2025-01-22
-    attrs.users.0.id    -> 1
-    attrs.users.0.email -> user1@test.com
-    attrs.users.1.id    -> 2
-    attrs.users.1.email -> user2@test.com
-
-// contract
+{
+  "id": "c2a44fe0-6840-4916-b6dd-b401f34f9c2a",
+  "number": 523552,
+  "created_at": "2025-01-01",
+  "expires_at": "2027-12-31",
+  "contractor": {
+    "id": "bd6a0da9-fe35-4a37-846c-dff3f32cf0ac",
+    "title": "Acme Inc"
+  },
+  "amount": 100000000,
+  "currency": "EUR",
+  "departments": [
+    {
+      "id": "46983690-b24a-4b7a-a3a4-02d2b69be036",
+      "title": "Risk Management"
+    },
+    {
+      "id": "27ef1e87-ca3d-4bf5-ab4e-30ac0b32839d",
+      "title": "Credit Processing"
+    },
+    {
+      "id": "00734da2-e3e9-4acf-83ad-a3c1bbe4a4ee",
+      "title": "IT Department"
+    }
+  ]
+}
 
 
 {
-   "id":"c2a44fe0-6840-4916-b6dd-b401f34f9c2a",
-   "number":523552,
-   "created_at":"2025-01-01",
-   "expires_at":"2027-12-31",
-   "contractor":{
-      "id":"bd6a0da9-fe35-4a37-846c-dff3f32cf0ac",
-      "title":"Acme Inc"
-   },
-   "amount":100000000,
-   "currency":"EUR",
-   "departments":[
-      {
-         "id":"46983690-b24a-4b7a-a3a4-02d2b69be036",
-         "title":"Risk Management"
-      },
-      {
-         "id":"27ef1e87-ca3d-4bf5-ab4e-30ac0b32839d",
-         "title":"Credit Processing"
-      },
-      {
-         "id":"00734da2-e3e9-4acf-83ad-a3c1bbe4a4ee",
-         "title":"IT Department"
-      }
-   ]
+  "id": "c2a44fe0-6840-4916-b6dd-b401f34f9c2a",
+  "type": "contract",
+  "number": 523552,
+  "created_at": "2025-01-01",
+  "created_by": {
+    "id": "099f2886-9772-4128-a5cd-b648369ce3f0",
+    "email": "some.user@test.com"
+  },
+  "tags": [
+    "risk",
+    "contract",
+    "acme"
+  ],
+  "expires_at": "2027-12-31",
+  "amount": 100000000
+}
+
+
+
+{
+  "id": "c2a44fe0-6840-4916-b6dd-b401f34f9c2a",
+  "meta": {
+    "type": "contract",
+    "created_at": "2025-01-01",
+    "created_by": {
+      "id": "099f2886-9772-4128-a5cd-b648369ce3f0",
+      "email": "some.user@test.com"
+    },
+    "tags": [
+      "risk",
+      "contract",
+      "acme"
+    ]
+  },
+  "number": 523552,
+  "expires_at": "2027-12-31",
+  "amount": 100000000
+}
+
+
+{
+  "id": "c2a44fe0-6840-4916-b6dd-b401f34f9c2a",
+  "meta": {
+    "type": "contract",
+    "created_at": "2025-01-01",
+    "created_by": {
+      "id": "099f2886-9772-4128-a5cd-b648369ce3f0",
+      "email": "some.user@test.com"
+    },
+    "tags": [
+      "risk",
+      "contract",
+      "acme"
+    ]
+  },
+  "attrs": {
+    "number": 523552,
+    "expires_at": "2027-12-31",
+    "amount": 100000000
+  }
 }
