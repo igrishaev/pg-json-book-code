@@ -108,3 +108,42 @@
     "amount": 100000000
   }
 }
+
+
+{
+  "id": "6e394e79-2d71-47ae-a314-534fd9a10719",
+  "amount": 10000,
+  "currency": "USD",
+  "users": [
+    {
+      "id": "418d4488-507f-4ad4-86a3-f1c1e43f4b69",
+      "email": "ivan@test.com"
+    },
+    {
+      "id": "9f3d6c5a-02b3-45cf-b256-699fe91aab59",
+      "email": "anna@test.com"
+    },
+    {
+      "id": "66250983-1a11-421d-86b8-753384bf4845",
+      "email": "elena@test.com"
+    }
+  ]
+}
+
+
+{
+  "id": "...",
+  "amount": 10000,
+  "contractor": "e093c3c8-54c8-4375-a964-4a5de09ef3d0",
+  "currency": "RUB"
+}
+
+{
+  "id": "...",
+  "amount": 10000,
+  "contractor": {
+    "ref": "e093c3c8-54c8-4375-a964-4a5de09ef3d0",
+    "entity": "contractor"
+  },
+  "currency": "RUB"
+}

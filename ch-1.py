@@ -42,3 +42,80 @@ for user in users:
   'user_id': 3,
   'job': 'cook',
   'is_open': True}]
+
+
+Meta = {
+    type: EnumType,
+    created_at: date,
+    created_by: UserRef,
+    tags: List<String>
+}
+
+Attrs = Dict<String, Any>
+
+Document = {
+    id: UUID,
+    meta: Meta,
+    attrs: Attrs
+}
+
+ContractBase = merge(Document, {
+    attrs: {
+        amount: Integer,
+        currency: EnumCurrency,
+        contractor: ContractorRef
+    }
+})
+
+ContractOrgIp = merge(ContractBase, {
+    attrs: {
+        ip: IPRef,
+        tenor: TenorSpec,
+        departments: List<DepartmentRef>
+    }
+})
+
+ContractMulti = MultiSchema(
+    FieldSelector("attrs.subtype"),
+    {
+        "ip_ip": ContractIpIp,
+        "org_ip": ContractOrgIp,
+        "org_org": ContractOrgOrg
+    }
+)
+
+
+version = doc["meta"]["version"]
+
+contractor_id = switch version {
+  case 1:
+    doc["contractor"]
+  case 2:
+    doc["contractor"]["ref"]
+  default:
+    ...
+}
+
+
+client = Client.connect(host, port, ...)
+
+doc = {
+    meta: {
+        created_at: now(),
+        created_by: user.id
+    },
+    attrs: {
+        amount: 10000,
+        currency: "USD"
+    }
+}
+
+client.save(doc)
+doc.update({attrs {amount: 10550}})
+doc.delete()
+
+
+client.find("payments", {
+    amount: 10000,
+    currency: "USD"
+})
