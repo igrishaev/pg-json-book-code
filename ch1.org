@@ -1,0 +1,10 @@
+
+
+|   id | title            | laptop.cpu_count | laptop.mem_freq | cloth.color | cloth.size | food.box_mass | food.diet_note |
+|------+------------------+------------------+-----------------+-------------+------------+---------------+----------------|
+| 1001 | Gazer Flade 18   |               10 |            5600 |             |            |               |                |
+| 1002 | MZI Katana 13 XH |               12 |            3200 |             |            |               |                |
+| 2001 | T-Shirt White    |                  |                 | white       | L,X,XL     |               |                |
+| 2002 | Shirt Pop Blue   |                  |                 | blue        | XXL,S      |               |                |
+| 3001 | Mega Snack Plus  |                  |                 |             |            |          1400 | no gluten      |
+| 3002 | Protein Bomb     |                  |                 |             |            |          1200 | no sugar       |

@@ -188,3 +188,55 @@ where
 select * from payments
 where
     amount = 10000 and currency = 'USD'
+
+
+create table items(
+    id integer primary key,
+    title text
+);
+
+create table item_props(
+    item_id integer references items(id),
+    property text,
+    value text
+);
+
+insert into items values
+    (1001, 'Gazer Flade 18'),
+    (1002, 'MZI Katana 13 XH'),
+    (2001, 'T-Shirt White'),
+    (2002, 'Shirt Pop Blue'),
+    (3001, 'Mega Snack Plus'),
+    (3002, 'Protein Bomb');
+
+insert into item_props values
+    (1001, 'laptop.cpu_count', '10'),
+    (1002, 'laptop.mem_freq', '5600'),
+    (1002, 'laptop.cpu_count', '12'),
+    (1002, 'laptop.mem_freq', '3200'),
+    (2001, 'cloth.color', 'white'),
+    (2001, 'cloth.size', 'L,X,XL'),
+    (2002, 'cloth.color', 'blue'),
+    (2002, 'cloth.size', 'XXL,S'),
+    (3001, 'food.box_mass', '1400'),
+    (3001, 'food.diet_note', 'no gluten'),
+    (3002, 'food.box_mass', '1200'),
+    (3002, 'food.diet_note', 'no sugar');
+
+select * from items, item_props where items.id = item_props.item_id;
+┌──────┬──────────────────┬─────────┬──────────────────┬───────────┐
+│  id  │      title       │ item_id │     property     │   value   │
+├──────┼──────────────────┼─────────┼──────────────────┼───────────┤
+│ 1001 │ Gazer Flade 18   │    1001 │ laptop.cpu_count │ 10        │
+│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.mem_freq  │ 5600      │
+│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.cpu_count │ 12        │
+│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.mem_freq  │ 3200      │
+│ 2001 │ T-Shirt White    │    2001 │ cloth.color      │ white     │
+│ 2001 │ T-Shirt White    │    2001 │ cloth.size       │ L,X,XL    │
+│ 2002 │ Shirt Pop Blue   │    2002 │ cloth.color      │ blue      │
+│ 2002 │ Shirt Pop Blue   │    2002 │ cloth.size       │ XXL,S     │
+│ 3001 │ Mega Snack Plus  │    3001 │ food.box_mass    │ 1400      │
+│ 3001 │ Mega Snack Plus  │    3001 │ food.diet_note   │ no gluten │
+│ 3002 │ Protein Bomb     │    3002 │ food.box_mass    │ 1200      │
+│ 3002 │ Protein Bomb     │    3002 │ food.diet_note   │ no sugar  │
+└──────┴──────────────────┴─────────┴──────────────────┴───────────┘
