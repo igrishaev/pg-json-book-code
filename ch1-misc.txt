@@ -28,3 +28,19 @@ attrs.users.1.email -> user2@test.com
 Объем.....................1400
 Общий вес.................800
 Диетические особенности...без глютена, без сахара
+
+
+
+db.posts.aggregate([
+  {
+    $lookup: {
+      from: "comments",
+      localField: "_id",
+      foreignField: "comment_id",
+      as: "comments"
+    }
+  },
+  {
+    $limit: 100
+  }
+])
