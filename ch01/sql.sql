@@ -30,6 +30,14 @@ select id, age from users;
 │  3 │  51 │
 └────┴─────┘
 
+select id, name from users where age between 18 and 49;
+
+┌────┬──────┐
+│ id │ name │
+├────┼──────┤
+│  2 │ John │
+└────┴──────┘
+
 create table profiles (
     user_id integer,
     job text,
@@ -88,54 +96,62 @@ create table eav (
 
 insert into eav values
 
-    (10001, 'user/id', '1'),
     (10001, 'user/name', 'Ivan'),
     (10001, 'user/age', '14'),
 
-    (10002, 'user/id', '2'),
     (10002, 'user/name', 'John'),
     (10002, 'user/age', '34'),
 
-    (10003, 'user/id', '3'),
     (10003, 'user/name', 'Juan'),
     (10003, 'user/age', '51'),
 
-    (10004, 'profile/user-id', '1'),
+    (10004, 'profile/user-ref', '10001'),
     (10004, 'profile/job', 'teacher'),
     (10004, 'profile/is-open', 'true'),
 
-    (10005, 'profile/user-id', '2'),
+    (10005, 'profile/user-ref', '10002'),
     (10005, 'profile/job', 'programmer'),
     (10005, 'profile/is-open', 'false'),
 
-    (10006, 'profile/user-id', '3'),
+    (10006, 'profile/user-ref', '10003'),
     (10006, 'profile/job', 'cook'),
     (10006, 'profile/is-open', 'true');
 
 select * from eav order by e;
 
-┌───────┬─────────────────┬────────────┐
-│   e   │        a        │     v      │
-├───────┼─────────────────┼────────────┤
-│ 10001 │ user/id         │ 1          │
-│ 10001 │ user/name       │ Ivan       │
-│ 10001 │ user/age        │ 14         │
-│ 10002 │ user/id         │ 2          │
-│ 10002 │ user/name       │ John       │
-│ 10002 │ user/age        │ 34         │
-│ 10003 │ user/id         │ 3          │
-│ 10003 │ user/name       │ Juan       │
-│ 10003 │ user/age        │ 51         │
-│ 10004 │ profile/user-id │ 1          │
-│ 10004 │ profile/job     │ teacher    │
-│ 10004 │ profile/is-open │ true       │
-│ 10005 │ profile/user-id │ 2          │
-│ 10005 │ profile/job     │ programmer │
-│ 10005 │ profile/is-open │ false      │
-│ 10006 │ profile/user-id │ 3          │
-│ 10006 │ profile/job     │ cook       │
-│ 10006 │ profile/is-open │ true       │
-└───────┴─────────────────┴────────────┘
+┌───────┬──────────────────┬────────────┐
+│   e   │        a         │     v      │
+├───────┼──────────────────┼────────────┤
+│ 10001 │ user/name        │ Ivan       │
+│ 10001 │ user/age         │ 14         │
+│ 10002 │ user/name        │ John       │
+│ 10002 │ user/age         │ 34         │
+│ 10003 │ user/name        │ Juan       │
+│ 10003 │ user/age         │ 51         │
+│ 10004 │ profile/user-ref │ 10001      │
+│ 10004 │ profile/job      │ teacher    │
+│ 10004 │ profile/is-open  │ true       │
+│ 10005 │ profile/user-ref │ 10002      │
+│ 10005 │ profile/job      │ programmer │
+│ 10005 │ profile/is-open  │ false      │
+│ 10006 │ profile/user-ref │ 10003      │
+│ 10006 │ profile/job      │ cook       │
+│ 10006 │ profile/is-open  │ true       │
+└───────┴──────────────────┴────────────┘
+
+TODO
+
+select *
+from
+    eav,
+    (select * from eav )
+
+where
+    e in (
+        select v::int from eav
+        where
+            a = 'profile/user-ref'
+    );
 
 create table contractors (
     id uuid primary key,

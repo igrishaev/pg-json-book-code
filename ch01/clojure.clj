@@ -40,12 +40,3 @@
   :user-id 3,
   :job "cook",
   :is-open true})
-
-[:where
-
- [?u :user/id
-
-  :]
-
-
-]
