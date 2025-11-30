@@ -139,19 +139,28 @@ select * from eav order by e;
 │ 10006 │ profile/is-open  │ true       │
 └───────┴──────────────────┴────────────┘
 
-TODO
 
 select *
-from
-    eav,
-    (select * from eav )
+    from eav
+where e in (
+    select v::integer
+    from eav
+    where a = 'profile/user-ref'
+        and e in (
+            select e from eav where a = 'profile/is-open' and v = 'true'
+    )
+    intersect
+    select e
+    from eav
+    where a = 'user/age' and v::integer > 18
+);
 
-where
-    e in (
-        select v::int from eav
-        where
-            a = 'profile/user-ref'
-    );
+┌───────┬───────────┬──────┐
+│   e   │     a     │  v   │
+├───────┼───────────┼──────┤
+│ 10003 │ user/name │ Juan │
+│ 10003 │ user/age  │ 51   │
+└───────┴───────────┴──────┘
 
 create table contractors (
     id uuid primary key,
