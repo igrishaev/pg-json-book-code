@@ -207,13 +207,10 @@ delete from payments where id = '...'
 
 
 select * from payments
-where
-    amount = 10000
+where amount = 10000
 
 select * from payments
-where
-    amount = 10000 and currency = 'USD'
-
+where amount = 10000 and currency = 'USD'
 
 create table items(
     id integer primary key,

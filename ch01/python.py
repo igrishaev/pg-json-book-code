@@ -114,7 +114,6 @@ client.save(doc)
 doc.update({attrs {amount: 10550}})
 doc.delete()
 
-
 client.find("payments", {
     amount: 10000,
     currency: "USD"

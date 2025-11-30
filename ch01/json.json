@@ -48,6 +48,20 @@
 
 {
   "id": "c2a44fe0-6840-4916-b6dd-b401f34f9c2a",
+  "number": 523552,
+  "created_at": "2025-01-01",
+  "expires_at": "2027-12-31",
+  "contractor": {
+    "id": "bd6a0da9-fe35-4a37-846c-dff3f32cf0ac",
+    "title": "Acme Inc"
+  },
+  "amount": 100000000,
+  "currency": "EUR"
+}
+
+
+{
+  "id": "c2a44fe0-6840-4916-b6dd-b401f34f9c2a",
   "type": "contract",
   "number": 523552,
   "created_at": "2025-01-01",
