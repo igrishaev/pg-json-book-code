@@ -40,3 +40,24 @@
   :user-id 3,
   :job "cook",
   :is-open true})
+
+
+(defn contractor-ref [doc]
+  (let [version (-> doc :meta :version)]
+    (case version
+      1 (-> doc :contractor)
+      2 (-> doc :contractor :ref)
+      (-> doc :contractor))))
+
+
+(defmulti contractor-ref
+  (fn [doc]
+    (-> doc :meta :version)))
+
+(defmethod contractor-ref :default
+  [doc]
+  (-> doc :contractor))
+
+(defmethod contractor-ref 2
+  [doc]
+  (-> doc :contractor :ref))
