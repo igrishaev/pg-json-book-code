@@ -108,3 +108,85 @@ select '[10, 20, 30]'::jsonb -> -1 as last;
 ├──────┤
 │ 30   │
 └──────┘
+
+
+select '{"a": 1, "b": 2}'::jsonb -> 'c' is null as is_null;
+┌─────────┐
+│ is_null │
+├─────────┤
+│ t       │
+└─────────┘
+
+select '{"a": 1, "b": 2, "c": null}'::jsonb -> 'c' is null as is_null;
+┌─────────┐
+│ is_null │
+├─────────┤
+│ f       │
+└─────────┘
+
+select '{"age": 42}'::jsonb -> 'age';
+select '{"name": "John"}'::jsonb -> 'name';
+
+select '{"name": "John"}'::jsonb -> 'name' as name;
+┌────────┐
+│  name  │
+├────────┤
+│ "John" │
+└────────┘
+
+
+prepare expr as select '{"test1": "abc", "test2": "xyz"}'::jsonb -> $1::text as result;
+execute expr('test1');
+execute expr('test2');
+
+select $$ {
+  "users": [
+    {"id": 1, "name": "John Smith"},
+    {"id": 2, "name": "Ivan Petrov"}
+  ]
+}$$::jsonb -> 'users' -> -1 -> 'name' as name;
+
+┌───────────────┐
+│     name      │
+├───────────────┤
+│ "Ivan Petrov" │
+└───────────────┘
+
+select $$ {
+  "users": [
+    {"id": 1, "name": "John Smith"},
+    {"id": 2, "name": "Ivan Petrov"}
+  ]
+}$$::jsonb #> '{users,-1,name}' as name;
+
+
+select $$ {
+  "users": [
+    {"id": 1, "name": "John Smith"},
+    {"id": 2, "name": "Ivan Petrov"}
+  ]
+}$$::jsonb #> array['users', '-1', 'name'] as name;
+
+prepare expr2 as select $$ {
+  "users": [
+    {"id": 1, "name": "John Smith"},
+    {"id": 2, "name": "Ivan Petrov"}
+  ]
+}$$::jsonb #> array['users', $1, $2] as field;
+
+
+execute expr2('0', 'id');
+┌───────┐
+│ field │
+├───────┤
+│ 1     │
+└───────┘
+
+execute expr2('-1', 'name');
+┌───────────────┐
+│     field     │
+├───────────────┤
+│ "Ivan Petrov" │
+└───────────────┘
+
+select 'Hello, ' || ('{"name": "Ivan"}'::jsonb -> 'name');
