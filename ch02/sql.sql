@@ -190,3 +190,116 @@ execute expr2('-1', 'name');
 └───────────────┘
 
 select 'Hello, ' || ('{"name": "Ivan"}'::jsonb -> 'name');
+
+
+
+select $$ {
+  "users": [
+    {"id": 1, "name": "John Smith"},
+    {"id": 2, "name": "Ivan Petrov"}
+  ]
+}$$::jsonb #>> array['users', '0', 'name'] as name;
+
+┌────────────┐
+│   name     │
+├────────────┤
+│ John Smith │
+└────────────┘
+
+select $$ {
+  "users": [
+    {"id": 1, "name": "John Smith"},
+    {"id": 2, "name": "Ivan Petrov"}
+  ]
+}$$::jsonb ->> 'users' ->> '0' ->> 'name';
+
+
+
+
+select
+    (doc ->> 'points')::int4 as points,
+    (doc ->> 'ratio')::float4 as ratio,
+    (doc ->> 'active')::bool as is_active,
+    (doc ->> 'message') as message,
+    (doc ->> 'datetime')::timestamptz as datetime
+from (values
+    ($${
+        "points": 150,
+        "ratio": 1.05,
+        "active": true,
+        "message": "You've got new bonus points!",
+        "datetime": "2025-12-16T07:36:53Z"
+    }$$::jsonb)
+) as vals(doc);
+
+{"created_at": "2025-12-16T07:48:58.104784Z"}
+
+{}
+
+select to_timestamp(
+    $${
+      "created_at": "Tue, 15 Nov 1994 12:45:26 GMT"
+    }$$::jsonb ->> 'created_at',
+    'Dy, DD Mon YYYY HH:MI:SS GMT'
+);
+
+┌────────────────────────┐
+│      to_timestamp      │
+├────────────────────────┤
+│ 1994-11-15 00:45:26+03 │
+└────────────────────────┘
+
+
+select ('1'::jsonb ->> 0)::integer;
+┌──────┐
+│ int4 │
+├──────┤
+│    1 │
+└──────┘
+
+select '"message"'::jsonb ->> 0 as message;
+┌─────────┐
+│ message │
+├─────────┤
+│ message │
+└─────────┘
+
+select '{"user": {"name": "John"}}'::jsonb
+    -> 'user' -> 'name' as name;
+
+select '{"user": {"name": "John"}}'::jsonb
+    -> 'user' ->> 'name' as name;
+
+select '{"user": {"name": "John"}}'::jsonb
+    #> '{user,name}' as name;
+
+select '{"user": {"name": "John"}}'::jsonb
+    #>> '{user,name}' as name;
+
+select ('{"users": [{"name": "John"}]}'::jsonb)['users'][0]['name'] as name;
+
+prepare expr4 as
+select ('{"users": [{"name": "John", "age": 33}]}'::jsonb)['users'][$1::int4][$2::text] as field;
+
+execute expr4(0, 'name');
+
+execute expr4(0, 'age');
+
+{"display": {"width": 30, "height": 20}}
+
+update goods set
+    attrs['display']['width'] = attrs['display.width'],
+    attrs['display']['height'] = attrs['display.height']
+where id = 2
+returning *;
+
+update goods set
+    attrs = attrs - 'display.width' - 'display.height'
+where id = 2
+returning *;
+
+┌────┬────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ id │ title  │                                                      attrs                                                       │
+├────┼────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  2 │ Laptop │ {"display": {"width": 30, "height": 20}, "ram.freq": 2666, "wifi.available": true, "processor.family": "ARM M4"} │
+└────┴────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
