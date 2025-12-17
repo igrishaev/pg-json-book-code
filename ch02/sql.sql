@@ -215,7 +215,7 @@ select $$ {
 
 
 
-
+/*
 select
     (doc ->> 'points')::int4 as points,
     (doc ->> 'ratio')::float4 as ratio,
@@ -231,6 +231,7 @@ from (values
         "datetime": "2025-12-16T07:36:53Z"
     }$$::jsonb)
 ) as vals(doc);
+*/
 
 {"created_at": "2025-12-16T07:48:58.104784Z"}
 
@@ -303,3 +304,134 @@ returning *;
 ├────┼────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │  2 │ Laptop │ {"display": {"width": 30, "height": 20}, "ram.freq": 2666, "wifi.available": true, "processor.family": "ARM M4"} │
 └────┴────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+select '1'::jsonb @> '1'::jsonb; -- true
+
+select 'null'::jsonb @> 'null'::jsonb; -- true
+
+
+select '[1, 2, 3]'::jsonb @> '1'::jsonb; -- true
+
+select '[[1, 4], 2, 3]'::jsonb @> '1'::jsonb; -- false
+
+
+select '[1, 2, 3, 4]'::jsonb @> '[1, 3, 1]'::jsonb; -- true
+
+select
+  '{"users": [{"id": 1, "name": "John"}]}'::jsonb
+  @>
+  '{"users": [{"id": 1}]}'::jsonb; -- true
+
+select
+  '{"a": 1, "b": 2, "c": 3}'::jsonb
+  @>
+  '{"c": 3}'::jsonb; -- true
+
+select '{"users": [{"id": 1}]}'::jsonb ? 'users'; -- true
+
+select '{"a": 1, "b": 2}'::jsonb - 'a';
+-- {"b": 2}
+
+select '["active", "pending", "deleted"]'::jsonb - 2;
+-- ["active", "pending"]
+
+
+select
+  '{"users": [{"id": 1, "name": "John"}]}'::jsonb
+  #-
+  '{users,0,name}';
+-- {"users": [{"id": 1}]}
+
+select
+  'true'::jsonb || 'false'::jsonb;
+-- [true, false]
+
+select
+  '{"a": 1, "b": 2}'::jsonb || '{"b": 9, "c": 3}'::jsonb;
+-- {"a": 1, "b": 9, "c": 3}
+
+
+update goods set
+    attrs = attrs || $${
+    "box.width": "120 mm",
+    "box.height": "240 mm",
+    "box.weight": "0.9 kilo"
+}$$::jsonb
+where id = 1
+returning *;
+
+select
+  '{"a": 1, "b": [1, 2, 3]}'::jsonb
+  ||
+  '{"b": [4, 5, 6], "c": 3}'::jsonb;
+-- {"a": 1, "b": [4, 5, 6], "c": 3}
+
+
+create table sample (
+    id integer,
+    name text,
+    job text
+);
+
+insert into sample values
+  (1, 'Ivan', 'programmer'),
+  (2, 'John', 'cook'),
+  (3, 'Maria', 'manager');
+
+select
+    jsonb_build_array(id, name, job) as arr
+from
+    sample;
+
+┌───────────────────────────┐
+│            arr            │
+├───────────────────────────┤
+│ [1, "Ivan", "programmer"] │
+│ [2, "John", "cook"]       │
+│ [3, "Maria", "manager"]   │
+└───────────────────────────┘
+
+
+select
+    jsonb_build_object('id', id, 'name', name)
+    as object
+from sample;
+
+┌────────────────────────────┐
+│           object           │
+├────────────────────────────┤
+│ {"id": 1, "name": "Ivan"}  │
+│ {"id": 2, "name": "John"}  │
+│ {"id": 3, "name": "Maria"} │
+└────────────────────────────┘
+
+select to_jsonb(sample) as object
+from sample;
+┌────────────────────────────────────────────────┐
+│                     object                     │
+├────────────────────────────────────────────────┤
+│ {"id": 1, "job": "programmer", "name": "Ivan"} │
+│ {"id": 2, "job": "cook", "name": "John"}       │
+│ {"id": 3, "job": "manager", "name": "Maria"}   │
+└────────────────────────────────────────────────┘
+
+create table author (
+    id integer,
+    name text
+);
+
+create table book (
+    id integer,
+    author_id integer,
+    title text
+);
+
+insert into author values
+    (1, 'Orwell'), (2, 'Dostoevsky');
+
+insert into book values
+    (10, 1, '1984'),
+    (20, 1, 'The Animal Farm'),
+    (30, 2, 'Crime and Punishment'),
+    (40, 2, 'The idiot');
