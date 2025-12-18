@@ -1,0 +1,16 @@
+{
+  "id": 1,
+  "name": "Orwell",
+  "books": [
+    {
+      "id": 10,
+      "title": "1984",
+      "author_id": 1
+    },
+    {
+      "id": 20,
+      "title": "The Animal Farm",
+      "author_id": 1
+    }
+  ]
+}

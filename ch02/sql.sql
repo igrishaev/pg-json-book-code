@@ -417,12 +417,12 @@ from sample;
 └────────────────────────────────────────────────┘
 
 create table author (
-    id integer,
+    id integer primary key,
     name text
 );
 
 create table book (
-    id integer,
+    id integer primary key,
     author_id integer,
     title text
 );
@@ -435,3 +435,79 @@ insert into book values
     (20, 1, 'The Animal Farm'),
     (30, 2, 'Crime and Punishment'),
     (40, 2, 'The idiot');
+
+
+select
+    author.*, book.*
+from author
+left join book on book.author_id = author.id;
+
+┌────┬────────────┬────┬───────────┬──────────────────────┐
+│ id │    name    │ id │ author_id │        title         │
+├────┼────────────┼────┼───────────┼──────────────────────┤
+│  1 │ Orwell     │ 10 │         1 │ 1984                 │
+│  1 │ Orwell     │ 20 │         1 │ The Animal Farm      │
+│  2 │ Dostoevsky │ 30 │         2 │ Crime and Punishment │
+│  2 │ Dostoevsky │ 40 │         2 │ The idiot            │
+└────┴────────────┴────┴───────────┴──────────────────────┘
+
+
+select
+    author.*,
+    jsonb_agg(book) as books
+from author
+left join book on book.author_id = author.id
+group by author.id;
+
+┌────┬────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ id │    name    │                                                      books                                                      │
+├────┼────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  1 │ Orwell     │ [{"id": 10, "title": "1984", "author_id": 1}, {"id": 20, "title": "The Animal Farm", "author_id": 1}]           │
+│  2 │ Dostoevsky │ [{"id": 30, "title": "Crime and Punishment", "author_id": 2}, {"id": 40, "title": "The idiot", "author_id": 2}] │
+└────┴────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+select
+    (book ->> 'id')::integer as id,
+    book ->> 'title' as title,
+    (book ->> 'author_id')::integer as author_id
+from
+    jsonb_array_elements($$[
+        {"id": 10, "title": "1984", "author_id": 1},
+        {"id": 20, "title": "The Animal Farm", "author_id": 1}
+    ]$$) as book;
+
+┌────┬─────────────────┬───────────┐
+│ id │      title      │ author_id │
+├────┼─────────────────┼───────────┤
+│ 10 │ 1984            │         1 │
+│ 20 │ The Animal Farm │         1 │
+└────┴─────────────────┴───────────┘
+
+create table application (
+    id integer primary key,
+    department text,
+    status text,
+    users jsonb
+);
+
+insert into application values
+    (1, 'finance', 'active', '[{"id": 10, "name": "John"}, {"id": 12, "name": "George"}]'),
+    (2, 'accounting', 'pending', '[{"id": 14, "name": "Anna"}, {"id": 18, "name": "Federica"}]');
+
+select
+    app.id as app_id,
+    app.status as app_status,
+    (user_item->>'id')::integer as user_id,
+    user_item->>'name' as user_name
+from
+    application app,
+    jsonb_array_elements(app.users) as user_item;
+
+┌────────┬────────────┬─────────┬───────────┐
+│ app_id │ app_status │ user_id │ user_name │
+├────────┼────────────┼─────────┼───────────┤
+│      1 │ active     │      10 │ John      │
+│      1 │ active     │      12 │ George    │
+│      2 │ pending    │      14 │ Anna      │
+│      2 │ pending    │      18 │ Federica  │
+└────────┴────────────┴─────────┴───────────┘
