@@ -571,13 +571,13 @@ from
 
 
 create table goods (
-    id integer primary key,
+    sku text primary key,
     title text,
     category text,
     price integer
 );
 
 insert into goods values
-    (1, 'Laptop', 'computers', 56000),
-    (2, 'T-shirt', 'cloth', 2300),
-    (3, 'Pencil', 'stationery', 10);
+    ('Asus62HF', 'Laptop',  'computers',  56000),
+    ('5236/XXL', 'T-shirt', 'cloth',      2300),
+    ('623/A/HS', 'Pencil',  'stationery', 10);
