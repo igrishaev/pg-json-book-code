@@ -581,3 +581,37 @@ insert into goods values
     ('Asus62HF', 'Laptop',  'computers',  56000),
     ('5236/XXL', 'T-shirt', 'cloth',      2300),
     ('623/A/HS', 'Pencil',  'stationery', 10);
+
+prepare stmt as
+with json as (
+    select
+        item->>'sku' as sku,
+        item->>'title' as title
+    from
+        jsonb_array_elements($1::jsonb) as item
+)
+select
+    db is null as json_only,
+    json is null as db_only,
+    db is not null as both,
+    db.title as db_title,
+    json.title as json_title,
+    db is not null and db.title <> json.title as title_mismatch
+from
+    goods as db
+full join json on db.sku = json.sku;
+
+execute stmt($$[
+ {"sku": "5236/XXL", "title": "T-shirt"},
+ {"sku": "623/A/HS", "title": "Black pen"},
+ {"sku": "UWII5133", "title": "Tea spoon"}
+]$$);
+
+┌───────────┬─────────┬──────┬──────────┬────────────┬────────────────┐
+│ json_only │ db_only │ both │ db_title │ json_title │ title_mismatch │
+├───────────┼─────────┼──────┼──────────┼────────────┼────────────────┤
+│ f         │ t       │ t    │ Laptop   │ <null>     │ <null>         │
+│ f         │ f       │ t    │ T-shirt  │ T-shirt    │ f              │
+│ f         │ f       │ t    │ Pencil   │ Black pen  │ t              │
+│ t         │ f       │ f    │ <null>   │ Tea spoon  │ f              │
+└───────────┴─────────┴──────┴──────────┴────────────┴────────────────┘
