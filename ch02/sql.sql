@@ -511,3 +511,73 @@ from
 │      2 │ pending    │      14 │ Anna      │
 │      2 │ pending    │      18 │ Federica  │
 └────────┴────────────┴─────────┴───────────┘
+
+
+create table application2 (
+    id integer primary key,
+    number text,
+    status text,
+    departments jsonb
+);
+
+
+insert into application2 values
+    (1, '525/23A', 'active', $$
+[{"code": "risk", "name": "Risk Department", "users": [{"id": 10, "name": "John"}]},
+ {"code": "analytics", "name": "Analytics Department", "users": [{"id": 12, "name": "George"}]}]
+    $$),
+    (2, '2460-A2', 'pending', $$
+[{"code": "risk", "name": "Risk Department", "users": [{"id": 14, "name": "Anna"}]},
+ {"code": "analytics", "name": "Analytics Department", "users": [{"id": 18, "name": "Federica"}]}]
+    $$);
+
+
+select
+    app.id as app_id,
+    app.number as app_number,
+    dep->>'code' as dep_code,
+    dep->>'name' as dep_name,
+    (usr->>'id')::int as user_id,
+    usr->>'name' as user_name
+from
+    application2 app,
+    jsonb_array_elements(departments) as dep,
+    jsonb_array_elements(dep->'users') as usr;
+
+
+┌────────┬────────────┬───────────┬──────────────────────┬─────────┬───────────┐
+│ app_id │ app_number │ dep_code  │       dep_name       │ user_id │ user_name │
+├────────┼────────────┼───────────┼──────────────────────┼─────────┼───────────┤
+│      1 │ 525/23A    │ risk      │ Risk Department      │      10 │ John      │
+│      1 │ 525/23A    │ analytics │ Analytics Department │      12 │ George    │
+│      2 │ 2460-A2    │ risk      │ Risk Department      │      14 │ Anna      │
+│      2 │ 2460-A2    │ analytics │ Analytics Department │      18 │ Federica  │
+└────────┴────────────┴───────────┴──────────────────────┴─────────┴───────────┘
+
+select
+    app.id as app_id,
+    app.number as app_number,
+    jt.*
+from
+    application2 app,
+    json_table(departments, '$[*]' columns(
+        dep_code text path '$.code',
+        dep_name text path '$.name',
+        nested path '$.users[*]' columns(
+            user_id integer path '$.id',
+            user_name text path '$.name'
+        )
+)) as jt;
+
+
+create table goods (
+    id integer primary key,
+    title text,
+    category text,
+    price integer
+);
+
+insert into goods values
+    (1, 'Laptop', 'computers', 56000),
+    (2, 'T-shirt', 'cloth', 2300),
+    (3, 'Pencil', 'stationery', 10);
