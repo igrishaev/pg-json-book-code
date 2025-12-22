@@ -15,7 +15,7 @@
 (def profiles
   [{:user-id 1 :job "teacher" :is-open true}
    {:user-id 2 :job "programmer" :is-open false}
-   {:user-id 3 :job "cook" :is-open true}])
+   {:user-id 3 :job "tester" :is-open true}])
 
 (defn index-by [kw rows]
   (->> rows
@@ -38,7 +38,7 @@
   :name "Juan",
   :age 51,
   :user-id 3,
-  :job "cook",
+  :job "tester",
   :is-open true})
 
 

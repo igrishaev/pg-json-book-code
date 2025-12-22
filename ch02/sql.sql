@@ -258,9 +258,9 @@ select ('1'::jsonb ->> 0)::integer;
 │    1 │
 └──────┘
 
-select '"message"'::jsonb ->> 0 as message;
+select '"message"'::jsonb ->> 0 as text;
 ┌─────────┐
-│ message │
+│ text    │
 ├─────────┤
 │ message │
 └─────────┘
@@ -376,7 +376,7 @@ create table sample (
 
 insert into sample values
   (1, 'Ivan', 'programmer'),
-  (2, 'John', 'cook'),
+  (2, 'John', 'tester'),
   (3, 'Maria', 'manager');
 
 select
@@ -388,7 +388,7 @@ from
 │            arr            │
 ├───────────────────────────┤
 │ [1, "Ivan", "programmer"] │
-│ [2, "John", "cook"]       │
+│ [2, "John", "tester"]       │
 │ [3, "Maria", "manager"]   │
 └───────────────────────────┘
 
@@ -412,7 +412,7 @@ from sample;
 │                     object                     │
 ├────────────────────────────────────────────────┤
 │ {"id": 1, "job": "programmer", "name": "Ivan"} │
-│ {"id": 2, "job": "cook", "name": "John"}       │
+│ {"id": 2, "job": "tester", "name": "John"}     │
 │ {"id": 3, "job": "manager", "name": "Maria"}   │
 └────────────────────────────────────────────────┘
 

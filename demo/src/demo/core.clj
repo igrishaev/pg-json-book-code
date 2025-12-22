@@ -40,7 +40,7 @@
      {:db/id "user3" :user/name "Juan" :user/age 51}
      {:profile/user-ref "user1" :profile/job "teacher"    :profile/is-open true}
      {:profile/user-ref "user2" :profile/job "programmer" :profile/is-open false}
-     {:profile/user-ref "user3" :profile/job "cook"       :profile/is-open true}])
+     {:profile/user-ref "user3" :profile/job "tester"     :profile/is-open true}])
 
   (d/transact conn {:tx-data data})
 

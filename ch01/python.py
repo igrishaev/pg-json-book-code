@@ -20,7 +20,7 @@ new_users = [
 profiles = [
     {"user_id": 1, "job": "teacher", "is_open": True},
     {"user_id": 2, "job": "programmer", "is_open": False},
-    {"user_id": 3, "job": "cook", "is_open": True},
+    {"user_id": 3, "job": "tester", "is_open": True},
 ]
 
 def index_by(field, rows):
@@ -40,7 +40,7 @@ for user in users:
   'name': 'Juan',
   'age': 51,
   'user_id': 3,
-  'job': 'cook',
+  'job': 'tester',
   'is_open': True}]
 
 

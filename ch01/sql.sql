@@ -47,7 +47,7 @@ create table profiles (
 insert into profiles values
     (1, 'teacher', true),
     (2, 'programmer', false),
-    (3, 'cook', true);
+    (3, 'tester', true);
 
 select * from users u
 join profiles p on u.id = p.user_id;
@@ -57,7 +57,7 @@ join profiles p on u.id = p.user_id;
 ├────┼──────┼─────┼─────────┼────────────┼─────────┤
 │  1 │ Ivan │  14 │       1 │ teacher    │ t       │
 │  2 │ John │  34 │       2 │ programmer │ f       │
-│  3 │ Juan │  51 │       3 │ cook       │ t       │
+│  3 │ Juan │  51 │       3 │ tester     │ t       │
 └────┴──────┴─────┴─────────┴────────────┴─────────┘
 
 select 1 as x;
@@ -82,11 +82,11 @@ select * from users u
 join profiles p on u.id = p.user_id
 where u.age > 18 and p.is_open;
 
-┌────┬──────┬─────┬─────────┬──────┬─────────┐
-│ id │ name │ age │ user_id │ job  │ is_open │
-├────┼──────┼─────┼─────────┼──────┼─────────┤
-│  3 │ Juan │  51 │       3 │ cook │ t       │
-└────┴──────┴─────┴─────────┴──────┴─────────┘
+┌────┬──────┬─────┬─────────┬────────┬─────────┐
+│ id │ name │ age │ user_id │ job    │ is_open │
+├────┼──────┼─────┼─────────┼────────┼─────────┤
+│  3 │ Juan │  51 │       3 │ tester │ t       │
+└────┴──────┴─────┴─────────┴────────┴─────────┘
 
 create table eav (
     e integer,
@@ -114,7 +114,7 @@ insert into eav values
     (10005, 'profile/is-open', 'false'),
 
     (10006, 'profile/user-ref', '10003'),
-    (10006, 'profile/job', 'cook'),
+    (10006, 'profile/job', 'tester'),
     (10006, 'profile/is-open', 'true');
 
 select * from eav order by e;
@@ -135,7 +135,7 @@ select * from eav order by e;
 │ 10005 │ profile/job      │ programmer │
 │ 10005 │ profile/is-open  │ false      │
 │ 10006 │ profile/user-ref │ 10003      │
-│ 10006 │ profile/job      │ cook       │
+│ 10006 │ profile/job      │ tester     │
 │ 10006 │ profile/is-open  │ true       │
 └───────┴──────────────────┴────────────┘
 
