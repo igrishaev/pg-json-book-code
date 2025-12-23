@@ -607,6 +607,11 @@ execute stmt($$[
  {"sku": "UWII5133", "title": "Tea spoon"}
 ]$$);
 
+\set goods_file `cat ch02/goods.json`
+
+execute stmt(:'goods_file');
+
+
 ┌───────────┬─────────┬──────┬──────────┬────────────┬────────────────┐
 │ json_only │ db_only │ both │ db_title │ json_title │ title_mismatch │
 ├───────────┼─────────┼──────┼──────────┼────────────┼────────────────┤
@@ -615,3 +620,73 @@ execute stmt($$[
 │ f         │ f       │ t    │ Pencil   │ Black pen  │ t              │
 │ t         │ f       │ f    │ <null>   │ Tea spoon  │ f              │
 └───────────┴─────────┴──────┴──────────┴────────────┴────────────────┘
+
+
+[{"id": 30, "title": "Crime and Punishment", "author_id": 2},
+ {"id": 40, "title": "The idiot", "author_id": 2}]
+
+
+select
+    (doc->>'id')::integer as author_id,
+    doc->>'name' as author_name,
+    (book->>'id')::integer as book_id,
+    book->>'title' as book_title
+from
+    (values ($${
+      "id": 1,
+      "name": "Orwell",
+      "books": [
+        {
+          "id": 10,
+          "title": "1984"
+        },
+        {
+          "id": 20,
+          "title": "The Animal Farm"
+        }
+      ]}$$::jsonb)) as val(doc),
+    jsonb_array_elements(doc['books']) as book;
+
+┌───────────┬─────────────┬─────────┬─────────────────┐
+│ author_id │ author_name │ book_id │   book_title    │
+├───────────┼─────────────┼─────────┼─────────────────┤
+│         1 │ Orwell      │      10 │ 1984            │
+│         1 │ Orwell      │      20 │ The Animal Farm │
+└───────────┴─────────────┴─────────┴─────────────────┘
+
+
+
+select
+    (author->>'id')::integer as author_id,
+    author->>'name' as author_name,
+    (book->>'id')::integer as book_id,
+    book->>'title' as book_title
+from
+    jsonb_array_elements($$[
+{
+  "id": 1,
+  "name": "Orwell",
+  "books": [
+    {"id": 10, "title": "1984"},
+    {"id": 20, "title": "The Animal Farm"}
+  ]
+},
+{
+  "id": 2,
+  "name": "Dostoevsky",
+  "books": [
+    {"id": 30, "title": "Crime and Punishment", "author_id": 2},
+    {"id": 40, "title": "The idiot", "author_id": 2}
+  ]
+}
+]$$) as author,
+    jsonb_array_elements(author['books']) as book;
+
+┌───────────┬─────────────┬─────────┬──────────────────────┐
+│ author_id │ author_name │ book_id │      book_title      │
+├───────────┼─────────────┼─────────┼──────────────────────┤
+│         1 │ Orwell      │      10 │ 1984                 │
+│         1 │ Orwell      │      20 │ The Animal Farm      │
+│         2 │ Dostoevsky  │      30 │ Crime and Punishment │
+│         2 │ Dostoevsky  │      40 │ The idiot            │
+└───────────┴─────────────┴─────────┴──────────────────────┘
