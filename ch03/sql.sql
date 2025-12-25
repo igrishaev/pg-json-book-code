@@ -389,3 +389,10 @@ limit 1 offset 7;
 
 
 delete from applications;
+
+
+select count(*) from applications;
+
+┌─[ RECORD 1 ]────┐
+│ count │ 1000000 │
+└───────┴─────────┘
