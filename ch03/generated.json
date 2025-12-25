@@ -1,0 +1,92 @@
+{
+  "id": "00000000-0000-0000-0000-000000000008",
+  "status": "active",
+  "amounts": [
+    {
+      "amount": 91117191,
+      "period": {
+        "d": 8,
+        "m": 10,
+        "w": 7,
+        "y": 9
+      },
+      "currency": "EUR"
+    },
+    {
+      "amount": 67993749,
+      "period": {
+        "d": 10,
+        "m": 8,
+        "w": 4,
+        "y": 10
+      },
+      "currency": "USD"
+    }
+  ],
+  "comment": "Comment number #8",
+  "journal": [
+    {
+      "event": "active",
+      "user_id": "2a91d55e-c3f5-4aea-8670-154a6b3d247e",
+      "datetime": "2025-10-28T20:55:35.426549+03:00"
+    },
+    {
+      "event": "approved",
+      "user_id": "86808f9f-b00e-4e18-970b-c7e4e04a6ceb",
+      "datetime": "2025-03-28T17:41:05.007494+03:00"
+    },
+    {
+      "event": "deleted",
+      "user_id": "75444c68-49b9-4552-badd-fc1deb961f28",
+      "datetime": "2025-10-17T07:47:09.806839+03:00"
+    }
+  ],
+  "created_at": "2025-12-13T07:44:26.926054+03:00",
+  "created_by": {
+    "id": "00000000-0000-0000-0000-000000000008",
+    "name": "User 0008",
+    "email": "user_0008@test.com"
+  },
+  "departments": [
+    {
+      "id": "00000000-0000-0000-0000-000000000008",
+      "code": "dep_8",
+      "name": "Department 8",
+      "users": [
+        {
+          "id": "00000000-0000-0000-0000-000000000008",
+          "name": "User 8",
+          "email": "user_8@test.com"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000018",
+          "name": "User 18",
+          "email": "user_18@test.com"
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000018",
+      "code": "dep_18",
+      "name": "Department 18",
+      "users": [
+        {
+          "id": "00000000-0000-0000-0000-000000000028",
+          "name": "User 28",
+          "email": "user_28@test.com"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000038",
+          "name": "User 38",
+          "email": "user_38@test.com"
+        }
+      ]
+    }
+  ],
+  "organization": {
+    "id": "00000000-0000-0000-0000-000000000008",
+    "code": 8,
+    "short_name": "Organization 8"
+  },
+  "application_id": 8
+}
