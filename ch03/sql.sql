@@ -1,4 +1,14 @@
 
+create table application_amounts(
+    application_id uuid references applications(id),
+    amount integer,
+    currency text,
+    year integer,
+    month integer,
+    week integer,
+    day integer
+);
+
 create extension if not exists "uuid-ossp";
 
 create table applications (
