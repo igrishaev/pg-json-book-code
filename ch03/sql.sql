@@ -50,12 +50,22 @@ select distinct status from tasks;
 │ deleted  │
 └──────────┘
 
+with
+total(count) as (
+    select count(*) from tasks
+),
+grouped(status, count) as (
+    select
+        status,
+        count(status)
+    from tasks
+    group by status
+)
 select
-    status,
-    to_char(count(status) / 9.0, '00.99')
+    grouped.status,
+    to_char(grouped.count * 1.0 / total.count, '00.99')
     as ratio
-from tasks
-group by status;
+from grouped, total;
 
 ┌──────────┬────────┐
 │  status  │ ratio  │
@@ -65,6 +75,7 @@ group by status;
 │ pending  │  00.22 │
 │ deleted  │  00.11 │
 └──────────┴────────┘
+
 
 select distinct doc #>> '{meta,status}' from tasks;
 
