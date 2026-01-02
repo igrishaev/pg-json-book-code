@@ -1,0 +1,8 @@
+{
+  "status": "pending",
+  "updated_by": {
+    "id": "<UUID>",
+    "email": "ivan@acme.com",
+    "name": "Ivan Petrov"
+  }
+}

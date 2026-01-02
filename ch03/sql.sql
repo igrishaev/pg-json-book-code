@@ -318,6 +318,31 @@ insert into applications (id, doc, created_at)
 select
     gen_uuid(x),
     jsonb_build_object(
+        /* huge json goes here */
+    ),
+    now()
+from
+    generate_series(1, 9) as seq(x);
+
+
+(format('user_%s', x % 1000))
+
+select * from (values
+    (to_char(1, '999.00')),
+    (to_char(-1, '999.00')))
+as vals(x);
+
+┌────────┐
+│   x    │
+├────────┤
+│  01.00 │
+│ -01.00 │
+└────────┘
+
+insert into applications (id, doc, created_at)
+select
+    gen_uuid(x),
+    jsonb_build_object(
         'id', gen_uuid(x),
         'status', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
         'created_at', (now() - interval '1 day' * random() * 365),
@@ -417,3 +442,215 @@ select count(*) from applications;
 ┌─[ RECORD 1 ]────┐
 │ count │ 1000000 │
 └───────┴─────────┘
+
+---------------
+
+select id, jsonb_pretty(doc) as doc
+from applications
+limit 1
+offset 500000;
+
+┌──────────────────────────────────────┬───────────────────────────────────────────────────────────────────┐
+│                  id                  │                                doc                                │
+├──────────────────────────────────────┼───────────────────────────────────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000500001 │ {                                                                ↵│
+│                                      │     "id": "00000000-0000-0000-0000-000000500001",                ↵│
+│                                      │     "status": "deleted",                                         ↵│
+│                                      │     "amounts": [                                                 ↵│
+│                                      │         {                                                        ↵│
+│                                      │             "amount": 23223688,                                  ↵│
+│                                      │             "period": {                                          ↵│
+│                                      │                 "d": 7,                                          ↵│
+│                                      │                 "m": 3,                                          ↵│
+│                                      │                 "w": 3,                                          ↵│
+│                                      │                 "y": 6                                           ↵│
+│                                      │             },                                                   ↵│
+│                                      │             "currency": "USD"                                    ↵│
+│                                      │         },                                                       ↵│
+│                                      │         {                                                        ↵│
+│                                      │             "amount": 24467700,                                  ↵│
+│                                      │             "period": {                                          ↵│
+│                                      │                 "d": 6,                                          ↵│
+│                                      │                 "m": 8,                                          ↵│
+│                                      │                 "w": 7,                                          ↵│
+│                                      │                 "y": 9                                           ↵│
+│                                      │             },                                                   ↵│
+│                                      │             "currency": "RUB"                                    ↵│
+│                                      │         }                                                        ↵│
+│                                      │     ],                                                           ↵│
+│                                      │     "comment": "Comment number #500001",                         ↵│
+│                                      │     "journal": [                                                 ↵│
+│                                      │         {                                                        ↵│
+│                                      │             "event": "active",                                   ↵│
+│                                      │             "user_id": "a9922c57-3da1-4177-b03c-263dec405d93",   ↵│
+│                                      │             "datetime": "2025-09-08T17:38:42.415013+03:00"       ↵│
+│                                      │         },                                                       ↵│
+
+
+select * from applications
+where id = '00000000-0000-0000-0000-000000500001';
+
+
+select id from applications
+where doc #>> '{organization,id}' = '00000000-0000-0000-0000-000000000001';
+
+┌──────────────────────────────────────┐
+│                  id                  │
+├──────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000500001 │
+│ 00000000-0000-0000-0000-000000501001 │
+│ 00000000-0000-0000-0000-000000502001 │
+│ 00000000-0000-0000-0000-000000503001 │
+│ 00000000-0000-0000-0000-000000504001 │
+
+
+update applications set
+    doc['status'] = '"deleted"',
+    doc['updated_at'] = '"2026-01-02T09:46:12Z"',
+    doc['comment'] = '"Deleting this applicaton"'
+where
+    id = '00000000-0000-0000-0000-000000500001';
+
+update applications set
+    doc = doc || $${
+        "status": "deleted",
+        "updated_at": "2026-01-02T09:46:12Z",
+        "comment": "Deleting this applicaton"
+    }$$::jsonb
+where id = '00000000-0000-0000-0000-000000500001';
+
+
+update applications set
+    doc['departments'][0]['users'][0]['name'] = '"Peter Dow"'
+where id = '00000000-0000-0000-0000-000000500001';
+
+
+update applications set
+    doc['departments'][-1]['users'][-1]['name'] = '"Last User"'
+where id = '00000000-0000-0000-0000-000000500001';
+
+
+
+update applications set
+    doc['review']['risk']['created_by'] = '"ivan@test.com"',
+    doc['review']['risk']['description'] = '"Some comment"'
+where id = '00000000-0000-0000-0000-000000500001'
+returning doc['review'];
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                   doc                                    │
+├──────────────────────────────────────────────────────────────────────────┤
+│ {"risk": {"created_by": "ivan@test.com", "description": "Some comment"}} │
+└──────────────────────────────────────────────────────────────────────────┘
+(1 row)
+
+
+update applications
+set doc = deep_merge(doc, $1)
+where id = $2;
+
+update applications set
+    doc['status'] = '"pending"',
+    doc['udpated_at']['id'] = '"<UUID>"',
+    doc['udpated_at']['email'] = '"ivan@acme.com"',
+    doc['udpated_at']['name'] = '"Ivan Petrov"'
+where id = '00000000-0000-0000-0000-000000500001'
+returning doc['review'];
+
+
+update applications set
+    doc['journal'] = '"[]"'
+where id = '00000000-0000-0000-0000-000000500001';
+
+update applications set
+    doc = '"{}"'
+where id = '00000000-0000-0000-0000-000000500001';
+
+select * from applications
+where id = '00000000-0000-0000-0000-000000500001';
+
+┌──────────────────────────────────────┬──────┬───────────────────────────────┬────────────┐
+│                  id                  │ doc  │          created_at           │ updated_at │
+├──────────────────────────────────────┼──────┼───────────────────────────────┼────────────┤
+│ 00000000-0000-0000-0000-000000500001 │ "{}" │ 2025-12-25 13:18:06.873203+03 │ <null>     │
+└──────────────────────────────────────┴──────┴───────────────────────────────┴────────────┘
+
+
+prepare app_upsert as
+insert into applications(id, doc) values ($1, $2)
+on conflict (id) do update set
+    doc = excluded.doc,
+    updated_at = now()
+returning id, doc, updated_at;
+
+
+execute app_upsert('00000000-0000-0000-0000-000000500001', $${
+  "some": "field"
+}$$::jsonb);
+
+┌──────────────────────────────────────┬───────────────────┬───────────────────────────────┐
+│                  id                  │        doc        │          updated_at           │
+├──────────────────────────────────────┼───────────────────┼───────────────────────────────┤
+│ 00000000-0000-0000-0000-000000500001 │ {"some": "field"} │ 2026-01-02 13:11:20.270694+03 │
+└──────────────────────────────────────┴───────────────────┴───────────────────────────────┘
+
+create temp table app_temp (
+    id uuid primary key,
+    doc jsonb not null
+);
+
+insert into app_temp values
+    ('00000000-0000-0000-0000-000000500001', '{"field1": "test1"}'::jsonb),
+    ('00000000-0000-0000-0000-000000500002', '{"field2": "test2"}'::jsonb),
+    ('00000000-0000-0000-0000-000000500003', '{"field3": "test3"}'::jsonb);
+
+
+insert into applications(id, doc)
+select * from app_temp
+on conflict (id) do update set
+    doc = excluded.doc,
+    updated_at = now()
+returning id, doc, updated_at;
+
+┌──────────────────────────────────────┬─────────────────────┬───────────────────────────────┐
+│                  id                  │         doc         │          updated_at           │
+├──────────────────────────────────────┼─────────────────────┼───────────────────────────────┤
+│ 00000000-0000-0000-0000-000000500001 │ {"field1": "test1"} │ 2026-01-02 13:15:52.478099+03 │
+│ 00000000-0000-0000-0000-000000500002 │ {"field2": "test2"} │ 2026-01-02 13:15:52.478099+03 │
+│ 00000000-0000-0000-0000-000000500003 │ {"field3": "test3"} │ 2026-01-02 13:15:52.478099+03 │
+└──────────────────────────────────────┴─────────────────────┴───────────────────────────────┘
+
+
+doc = doc || excluded.doc
+
+merge into applications as a
+using app_temp as t
+on a.id = t.id
+when matched then
+    update set
+        doc = t.doc,
+        updated_at = now()
+when not matched then
+    insert (id, doc)
+    values (t.id, t.doc);
+
+delete from applications
+where id = '00000000-0000-0000-0000-000000500005'
+returning doc;
+
+delete from applications
+where doc->>'status' = 'deleted';
+-- DELETE 249656
+
+
+update applications
+set doc['journal'] = 'null'
+where doc->>'status' = 'deleted';
+-- UPDATE 249656
+
+update applications
+set doc = doc - 'journal'
+where doc->>'status' = 'deleted';
+-- UPDATE 249656
+
+truncate applications;
