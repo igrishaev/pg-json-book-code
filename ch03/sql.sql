@@ -491,6 +491,10 @@ select * from applications
 where id = '00000000-0000-0000-0000-000000500001';
 
 
+select * from applications
+where doc->>'application_id' = '500001';
+
+
 select id from applications
 where doc #>> '{organization,id}' = '00000000-0000-0000-0000-000000000001';
 
@@ -507,7 +511,7 @@ where doc #>> '{organization,id}' = '00000000-0000-0000-0000-000000000001';
 update applications set
     doc['status'] = '"deleted"',
     doc['updated_at'] = '"2026-01-02T09:46:12Z"',
-    doc['comment'] = '"Deleting this applicaton"'
+    doc['comment'] = '"Deleting this application"'
 where
     id = '00000000-0000-0000-0000-000000500001';
 
@@ -515,9 +519,21 @@ update applications set
     doc = doc || $${
         "status": "deleted",
         "updated_at": "2026-01-02T09:46:12Z",
-        "comment": "Deleting this applicaton"
+        "comment": "Deleting this application"
     }$$::jsonb
 where id = '00000000-0000-0000-0000-000000500001';
+
+
+prepare app_update as
+update applications set
+    doc = doc || $2
+where id = $1;
+
+execute app_update('00000000-0000-0000-0000-000000500001', $${
+    "status": "deleted",
+    "updated_at": "2026-01-02T09:46:12Z",
+    "comment": "Deleting this application"
+}$$::jsonb);
 
 
 update applications set
@@ -556,6 +572,7 @@ update applications set
     doc['udpated_at']['name'] = '"Ivan Petrov"'
 where id = '00000000-0000-0000-0000-000000500001'
 returning doc['review'];
+
 
 
 update applications set
@@ -642,6 +659,9 @@ delete from applications
 where doc->>'status' = 'deleted';
 -- DELETE 249656
 
+delete from applications
+where doc #>> '{organization,id}' = '00000000-0000-0000-0000-000000000001';
+
 
 update applications
 set doc['journal'] = 'null'
@@ -654,3 +674,5 @@ where doc->>'status' = 'deleted';
 -- UPDATE 249656
 
 truncate applications;
+
+truncate applications, users, orders cascade;
