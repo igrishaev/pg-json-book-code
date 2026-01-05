@@ -1,0 +1,10 @@
+{
+  "id": "123",
+  "status": "active",
+  "tags": ["risk", "acme", "sample"],
+  "created_by": {
+    "id": "789",
+    "email": "test@acme.com",
+    "name": "Test User 1"
+  }
+}

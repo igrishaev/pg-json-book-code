@@ -9,6 +9,14 @@ create table application_amounts(
     day integer
 );
 
+
+create table application_journal(
+    application_id uuid references applications(id),
+    event text,
+    datetime timestamptz,
+    user_id uuid references users(id)
+);
+
 create extension if not exists "uuid-ossp";
 
 create table applications (
@@ -317,9 +325,7 @@ return to_char(x, 'FM00000000-0000-0000-0000-000000000000')::uuid;
 insert into applications (id, doc, created_at)
 select
     gen_uuid(x),
-    jsonb_build_object(
-        /* huge json goes here */
-    ),
+    jsonb_build_object(...),
     now()
 from
     generate_series(1, 9) as seq(x);
