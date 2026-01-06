@@ -31,8 +31,9 @@ result = conn.execute(
   (app_uuid, )
 )
 
-app_id = result["id"]
-app = result[0]["doc"]
+row    = result[0]
+app_id = row["id"]
+app    = row["doc"]
 
 app["status"] = "pending"
 
