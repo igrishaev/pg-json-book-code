@@ -45,7 +45,7 @@ conn.execute(
 # --
 
 conn.with_transaction() as tx:
-  result = tx.execute("select ... for update")
+  result = tx.execute("select ... for update", (app_id, ))
   app = ...
   ...
   tx.execute("update ... ", (app, app_id))

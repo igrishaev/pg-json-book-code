@@ -1,0 +1,47 @@
+prepare flatten as
+with recursive step as (
+    select
+        jt.*,
+        0 as level
+    from
+        json_table($1::jsonb, '$' columns(
+            id int4 path '$.id',
+            code text path '$.code',
+            children jsonb path '$.children'
+    )) as jt
+    UNION ALL
+    select
+        jt.*,
+        step.level + 1 as level
+    from
+        step,
+        json_table(step.children, '$[*]' columns(
+            id int4 path '$.id',
+            code text path '$.code',
+            children jsonb path '$.children'
+    )) as jt)
+select id, code, level from step
+order by level;
+
+
+execute flatten($${
+    "id": 1,
+    "code": "Product A",
+    "children": [
+        {"id": 2, "code": "Product B", "children": [
+            {"id": 5, "code": "Product E", "children": [
+                {"id": 6, "code": "Product F", "children": []}
+            ]}
+        ]},
+        {"id": 3, "code": "Product C", "children": [
+            {"id": 7, "code": "Product F", "children": [
+                {"id": 8, "code": "Product G", "children": []}
+            ]}
+
+        ]},
+        {"id": 4, "code": "Product D", "children": [
+            {"id": 5, "code": "Product E", "children": [
+                {"id": 9, "code": "Product H", "children": []}
+            ]}
+        ]}
+]}$$);
