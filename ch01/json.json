@@ -302,3 +302,16 @@
     "reference" : "Organization/1"
   }
 }
+
+
+{
+   "meta":{
+      "version":5
+   },
+   "contractor":{
+      "ref":{
+         "id":"...",
+         "type":":contractor"
+      }
+   }
+}

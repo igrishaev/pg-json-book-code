@@ -44,9 +44,29 @@
 
 (defn contractor-ref [doc]
   (let [version (-> doc :meta :version)]
-    (case version
-      1 (-> doc :contractor)
-      2 (-> doc :contractor :ref)
+    (cond
+      (>= version 2)
+      (-> doc :contractor :ref)
+
+      :else
+      (-> doc :contractor))))
+
+#_
+{:meta {:version 5}
+ :contractor {:ref {:id "..."
+                    :type :contractor}}}
+
+
+(defn contractor-ref [doc]
+  (let [version (-> doc :meta :version)]
+    (cond
+      (>= version 5)
+      (-> doc :contractor :ref :id)
+
+      (>= version 2)
+      (-> doc :contractor :ref)
+
+      :else
       (-> doc :contractor))))
 
 
