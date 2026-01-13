@@ -682,3 +682,10 @@ where doc->>'status' = 'deleted';
 truncate applications;
 
 truncate applications, users, orders cascade;
+
+create table patients (
+    id uuid primary key default uuid_generate_v4(),
+    entity jsonb not null,
+    created_at timestamptz not null default current_timestamp,
+    updated_at timestamptz
+);
