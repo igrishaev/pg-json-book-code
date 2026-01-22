@@ -224,8 +224,8 @@ create table item_props(
 );
 
 insert into items values
-    (1001, 'Gazer Flade 18'),
-    (1002, 'MZI Katana 13 XH'),
+    (1001, 'Razor Flare 18'),
+    (1002, 'MSI Katana 13 XH'),
     (2001, 'T-Shirt White'),
     (2002, 'Shirt Pop Blue'),
     (3001, 'Mega Snack Plus'),
@@ -249,10 +249,10 @@ select * from items, item_props where items.id = item_props.item_id;
 ┌──────┬──────────────────┬─────────┬──────────────────┬───────────┐
 │  id  │      title       │ item_id │     property     │   value   │
 ├──────┼──────────────────┼─────────┼──────────────────┼───────────┤
-│ 1001 │ Gazer Flade 18   │    1001 │ laptop.cpu_count │ 10        │
-│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.mem_freq  │ 5600      │
-│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.cpu_count │ 12        │
-│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.mem_freq  │ 3200      │
+│ 1001 │ Razor Flare 18   │    1001 │ laptop.cpu_count │ 10        │
+│ 1002 │ MSI Katana 13 XH │    1002 │ laptop.mem_freq  │ 5600      │
+│ 1002 │ MSI Katana 13 XH │    1002 │ laptop.cpu_count │ 12        │
+│ 1002 │ MSI Katana 13 XH │    1002 │ laptop.mem_freq  │ 3200      │
 │ 2001 │ T-Shirt White    │    2001 │ cloth.color      │ white     │
 │ 2001 │ T-Shirt White    │    2001 │ cloth.size       │ L,X,XL    │
 │ 2002 │ Shirt Pop Blue   │    2002 │ cloth.color      │ blue      │
@@ -293,10 +293,10 @@ select * from items, item_props_json where items.id = item_props_json.item_id;
 ┌──────┬──────────────────┬─────────┬──────────────────┬──────────────────┐
 │  id  │      title       │ item_id │     property     │      value       │
 ├──────┼──────────────────┼─────────┼──────────────────┼──────────────────┤
-│ 1001 │ Gazer Flade 18   │    1001 │ laptop.cpu_count │ 10               │
-│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.mem_freq  │ 5600             │
-│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.cpu_count │ 12               │
-│ 1002 │ MZI Katana 13 XH │    1002 │ laptop.mem_freq  │ 3200             │
+│ 1001 │ Razor Flare 18   │    1001 │ laptop.cpu_count │ 10               │
+│ 1002 │ MSI Katana 13 XH │    1002 │ laptop.mem_freq  │ 5600             │
+│ 1002 │ MSI Katana 13 XH │    1002 │ laptop.cpu_count │ 12               │
+│ 1002 │ MSI Katana 13 XH │    1002 │ laptop.mem_freq  │ 3200             │
 │ 2001 │ T-Shirt White    │    2001 │ cloth.color      │ "white"          │
 │ 2001 │ T-Shirt White    │    2001 │ cloth.size       │ ["L", "X", "XL"] │
 │ 2002 │ Shirt Pop Blue   │    2002 │ cloth.color      │ "blue"           │
