@@ -430,7 +430,7 @@ select
             )
         )
     ),
-    now()
+    (now() - interval '1 day' * random() * 365)
 from
     generate_series(1, 9) as seq(x);
 
