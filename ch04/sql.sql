@@ -78,3 +78,77 @@ order by created_at desc;
 │ Index Scan using idx_applications_created_at on applications  (cost=0.43..10838.16 rows=2691 width=1738)                                                                                                 │
 │   Index Cond: ((created_at >= '2025-07-30 00:00:00+03'::timestamp with time zone) AND (created_at <= (('2025-07-30 00:00:00+03'::timestamp with time zone + '1 day'::interval) - '00:00:01'::interval))) │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+create index if not exists
+idx_applications_application_id
+on applications using btree
+(((doc->>'application_id')::int));
+
+analyze applications;
+
+
+explain
+select id, doc from applications
+where ((doc->>'application_id')::int) = 550433;
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                              QUERY PLAN                                               │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_applications_application_id on applications  (cost=0.42..8.44 rows=1 width=1730) │
+│   Index Cond: (((doc ->> 'application_id'::text))::integer = 550433)                                  │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+explain
+select id, doc from applications
+where ((doc->>'application_id')::int) between 550000 and 550099
+order by ((doc->>'application_id')::int) asc;
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                             QUERY PLAN                                                              │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_applications_application_id on applications  (cost=0.42..286.56 rows=94 width=1734)                            │
+│   Index Cond: ((((doc ->> 'application_id'::text))::integer >= 550000) AND (((doc ->> 'application_id'::text))::integer <= 550099)) │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+explain analyze
+select id, doc from applications
+where ((doc->>'application_id')::int) between 550000 and 550099
+order by ((doc->>'application_id')::int) asc;
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                      QUERY PLAN                                                                      │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_applications_application_id on applications  (cost=0.42..286.56 rows=94 width=1734) (actual time=0.349..0.611 rows=100 loops=1) │
+│   Index Cond: ((((doc ->> 'application_id'::text))::integer >= 550000) AND (((doc ->> 'application_id'::text))::integer <= 550099))                  │
+│ Planning Time: 0.086 ms                                                                                                                              │
+│ Execution Time: 0.632 ms                                                                                                                             │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+explain
+select id, doc from applications
+where ((doc #>> '{application_id}')::int) between 550000 and 550099
+order by ((doc #>> '{application_id}')::int) asc;
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                     QUERY PLAN                                                                      │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Gather Merge  (cost=488635.14..489120.27 rows=4158 width=1734)                                                                                      │
+│   Workers Planned: 2                                                                                                                                │
+│   ->  Sort  (cost=487635.11..487640.31 rows=2079 width=1734)                                                                                        │
+│         Sort Key: (((doc #>> '{application_id}'::text[]))::integer)                                                                                 │
+│         ->  Parallel Seq Scan on applications  (cost=0.00..487520.54 rows=2079 width=1734)                                                          │
+│               Filter: ((((doc #>> '{application_id}'::text[]))::integer >= 550000) AND (((doc #>> '{application_id}'::text[]))::integer <= 550099)) │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+explain
+select id, doc from applications
+where ((doc #>> '{application_id}')::int) = 550099;
+
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                                      QUERY PLAN                                      │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│ Gather  (cost=1000.00..484846.20 rows=4989 width=1730)                               │
+│   Workers Planned: 2                                                                 │
+│   ->  Parallel Seq Scan on applications  (cost=0.00..483347.30 rows=2079 width=1730) │
+│         Filter: (((doc #>> '{application_id}'::text[]))::integer = 550099)           │
+└──────────────────────────────────────────────────────────────────────────────────────┘
