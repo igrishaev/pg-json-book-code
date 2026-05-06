@@ -470,47 +470,83 @@ from
 where
         (doc #>> '{application_id}') ilike '%12345%'
     and (doc #>> '{organization,short_name}') ilike 'Acme'
-    and (doc #>> '{...}') ? ----TODO
     and (doc #>> '{created_by,name}') ilike '%Мария%'
     and (doc #>> '{comment}') ilike '%начисления%'
 limit
     100;
 
 
+explain analyze
 select
     id, doc
 from
     applications
 where
-       (doc #>> '{path.to.field1}') ilike '%<text>%'
-    or (doc #>> '{path.to.field2}') ilike '%<text>%'
-    or (doc #>> '{path.to.field3}') ilike '%<text>%'
-    or (doc #>> '{path.to.field4}') ilike '%<text>%'
-    or (doc #>> '{path.to.field5}') ilike '%<text>%'
+       (doc #>> '{application_id}')          ilike '%12345%'
+    or (doc #>> '{organization,short_name}') ilike '%12345%'
+    or (doc #>> '{created_by,name}')         ilike '%12345%'
+    or (doc #>> '{comment}')                 ilike '%12345%'
 limit
     100;
 
-(
-       (doc #>> '{path.to.field1}') || ' '
-    || (doc #>> '{path.to.field2}') || ' '
-    || (doc #>> '{path.to.field3}') || ' '
-    || (doc #>> '{path.to.field4}') || ' '
-    || (doc #>> '{path.to.field5}')
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                                                                QUERY PLAN                                                                                                                                 │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=0.00..5724.80 rows=100 width=1830) (actual time=8.949..1287.774 rows=20 loops=1)                                                                                                                                                                             │
+│   ->  Seq Scan on applications  (cost=0.00..280000.00 rows=4891 width=1830) (actual time=8.948..1287.771 rows=20 loops=1)                                                                                                                                                 │
+│         Filter: (((doc #>> '{application_id}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{organization,short_name}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{created_by,name}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{comment}'::text[]) ~~* '%12345%'::text)) │
+│         Rows Removed by Filter: 999981                                                                                                                                                                                                                                    │
+│ Planning Time: 0.142 ms                                                                                                                                                                                                                                                   │
+│ Execution Time: 1287.796 ms                                                                                                                                                                                                                                               │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
-) ilike '%<text>%'
 
+select id, (
+       (doc #>> '{application_id}') || ' '
+    || (doc #>> '{organization,short_name}') || ' '
+    || (doc #>> '{created_by,name}') || ' '
+    || (doc #>> '{comment}')
+) as pattern
+    from applications
+limit 100;
 
-select
-concat_ws(
+┌──────────────────────────────────────┬──────────────────────────────────────────────────────┐
+│                  id                  │                       pattern                        │
+├──────────────────────────────────────┼──────────────────────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000009857 │ 9857 Organization 857 User 0857 Comment number #9857 │
+│ 00000000-0000-0000-0000-000000009858 │ 9858 Organization 858 User 0858 Comment number #9858 │
+│ 00000000-0000-0000-0000-000000009859 │ 9859 Organization 859 User 0859 Comment number #9859 │
+│ 00000000-0000-0000-0000-000000009860 │ 9860 Organization 860 User 0860 Comment number #9860 │
+│ 00000000-0000-0000-0000-000000009861 │ 9861 Organization 861 User 0861 Comment number #9861 │
+│ 00000000-0000-0000-0000-000000009862 │ 9862 Organization 862 User 0862 Comment number #9862 │
+│ 00000000-0000-0000-0000-000000009863 │ 9863 Organization 863 User 0863 Comment number #9863 │
+│ 00000000-0000-0000-0000-000000009864 │ 9864 Organization 864 User 0864 Comment number #9864 │
+
+select id, concat_ws(
     ' ',
-    (doc #>> '{path.to.field1}'),
-    (doc #>> '{path.to.field2}'),
-    (doc #>> '{path.to.field3}'),
-    (doc #>> '{path.to.field4}'),
-    (doc #>> '{path.to.field5}')
-)
+    (doc #>> '{application_id}'),
+    (doc #>> '{organization,short_name}'),
+    (doc #>> '{created_by,name}'),
+    (doc #>> '{comment}')
+) as pattern
 from applications
 limit 10;
+
+
+┌──────────────────────────────────────┬──────────────────────────────────────────────────────┐
+│                  id                  │                       pattern                        │
+├──────────────────────────────────────┼──────────────────────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000009921 │ 9921 Organization 921 User 0921 Comment number #9921 │
+│ 00000000-0000-0000-0000-000000009922 │ 9922 Organization 922 User 0922 Comment number #9922 │
+│ 00000000-0000-0000-0000-000000009923 │ 9923 Organization 923 User 0923 Comment number #9923 │
+│ 00000000-0000-0000-0000-000000009924 │ 9924 Organization 924 User 0924 Comment number #9924 │
+│ 00000000-0000-0000-0000-000000009925 │ 9925 Organization 925 User 0925 Comment number #9925 │
+│ 00000000-0000-0000-0000-000000009926 │ 9926 Organization 926 User 0926 Comment number #9926 │
+│ 00000000-0000-0000-0000-000000009927 │ 9927 Organization 927 User 0927 Comment number #9927 │
+│ 00000000-0000-0000-0000-000000009928 │ 9928 Organization 928 User 0928 Comment number #9928 │
+│ 00000000-0000-0000-0000-000000009929 │ 9929 Organization 929 User 0929 Comment number #9929 │
+│ 00000000-0000-0000-0000-000000009930 │ 9930 Organization 930 User 0930 Comment number #9930 │
+└──────────────────────────────────────┴──────────────────────────────────────────────────────┘
 
 select 'foo' || null || 'bar' as result;
 ┌────────┐
@@ -519,4 +555,60 @@ select 'foo' || null || 'bar' as result;
 │ <null> │
 └────────┘
 
-create index ...
+
+create index if not exists
+idx_applications_application_trgm_pattern
+on applications using gin
+((concat_ws(
+    ' ',
+    (doc #>> '{application_id}'),
+    (doc #>> '{organization,short_name}'),
+    (doc #>> '{created_by,name}'),
+    (doc #>> '{comment}')
+)) gin_trgm_ops);
+
+
+
+-- https://stackoverflow.com/questions/54372666/create-an-immutable-clone-of-concat-ws
+CREATE OR REPLACE FUNCTION immutable_concat_ws(text, VARIADIC text[])
+  RETURNS text
+  LANGUAGE internal IMMUTABLE PARALLEL SAFE AS 'text_concat_ws';
+
+
+create index if not exists
+idx_applications_application_trgm_pattern
+on applications using gin
+((immutable_concat_ws(
+    ' ',
+    (doc #>> '{application_id}'),
+    (doc #>> '{organization,short_name}'),
+    (doc #>> '{created_by,name}'),
+    (doc #>> '{comment}')
+)) gin_trgm_ops);
+
+explain analyze
+select id from applications
+where (immutable_concat_ws(
+    ' ',
+    (doc #>> '{application_id}'),
+    (doc #>> '{organization,short_name}'),
+    (doc #>> '{created_by,name}'),
+    (doc #>> '{comment}')
+)) ilike '%User 0925%'
+limit 100;
+
+-- '%Organization 927%'
+--
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                                                          QUERY PLAN                                                                                                                           │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=240.78..637.27 rows=100 width=16) (actual time=31.892..32.272 rows=100 loops=1)                                                                                                                                                                  │
+│   ->  Bitmap Heap Scan on applications  (cost=240.78..637.27 rows=100 width=16) (actual time=31.890..32.262 rows=100 loops=1)                                                                                                                                 │
+│         Recheck Cond: (immutable_concat_ws(' '::text, VARIADIC ARRAY[(doc #>> '{application_id}'::text[]), (doc #>> '{organization,short_name}'::text[]), (doc #>> '{created_by,name}'::text[]), (doc #>> '{comment}'::text[])]) ~~* '%User 0925%'::text)     │
+│         Heap Blocks: exact=100                                                                                                                                                                                                                                │
+│         ->  Bitmap Index Scan on idx_applications_application_trgm_pattern  (cost=0.00..240.75 rows=100 width=0) (actual time=31.694..31.694 rows=1009 loops=1)                                                                                               │
+│               Index Cond: (immutable_concat_ws(' '::text, VARIADIC ARRAY[(doc #>> '{application_id}'::text[]), (doc #>> '{organization,short_name}'::text[]), (doc #>> '{created_by,name}'::text[]), (doc #>> '{comment}'::text[])]) ~~* '%User 0925%'::text) │
+│ Planning Time: 0.504 ms                                                                                                                                                                                                                                       │
+│ Execution Time: 32.341 ms                                                                                                                                                                                                                                     │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
