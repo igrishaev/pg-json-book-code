@@ -416,3 +416,107 @@ select show_trgm('#alpha#, ?beta?, @gamma@');
 ├─────────────────────────────────────────────────────────────────────────────────────────┤
 │ {"  a","  b","  g"," al"," be"," ga",alp,amm,bet,eta,gam,"ha ",lph,"ma ",mma,pha,"ta "} │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
+
+*12345*
+%12345%
+
+
+create index if not exists
+idx_applications_application_org_short_code_trgm
+on applications using gin
+((doc #>> '{organization,short_name}') gin_trgm_ops);
+
+
+explain analyze
+select id from applications
+where (doc #>> '{organization,short_name}') like '%999%'
+limit 100;
+
+┌──────────────────────────────────────┐
+│                  id                  │
+├──────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000000999 │
+│ 00000000-0000-0000-0000-000000001999 │
+│ 00000000-0000-0000-0000-000000002999 │
+│ 00000000-0000-0000-0000-000000003999 │
+│ 00000000-0000-0000-0000-000000004999 │
+│ 00000000-0000-0000-0000-000000005999 │
+│ 00000000-0000-0000-0000-000000006999 │
+│ 00000000-0000-0000-0000-000000007999 │
+│ 00000000-0000-0000-0000-000000008999 │
+│ 00000000-0000-0000-0000-000000009999 │
+│ 00000000-0000-0000-0000-000000010999 │
+│ 00000000-0000-0000-0000-000000011999 │
+│ 00000000-0000-0000-0000-000000012999 │
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                             QUERY PLAN                                                                             │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=24.77..416.34 rows=99 width=16) (actual time=0.292..0.527 rows=100 loops=1)                                                                           │
+│   ->  Bitmap Heap Scan on applications  (cost=24.77..416.34 rows=99 width=16) (actual time=0.291..0.520 rows=100 loops=1)                                          │
+│         Recheck Cond: ((doc #>> '{organization,short_name}'::text[]) ~~ '%999%'::text)                                                                             │
+│         Heap Blocks: exact=100                                                                                                                                     │
+│         ->  Bitmap Index Scan on idx_applications_application_org_short_code_trgm  (cost=0.00..24.74 rows=99 width=0) (actual time=0.181..0.181 rows=1000 loops=1) │
+│               Index Cond: ((doc #>> '{organization,short_name}'::text[]) ~~ '%999%'::text)                                                                         │
+│ Planning Time: 0.224 ms                                                                                                                                            │
+│ Execution Time: 0.569 ms                                                                                                                                           │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+select
+    id, doc
+from
+    applications
+where
+        (doc #>> '{application_id}') ilike '%12345%'
+    and (doc #>> '{organization,short_name}') ilike 'Acme'
+    and (doc #>> '{...}') ? ----TODO
+    and (doc #>> '{created_by,name}') ilike '%Мария%'
+    and (doc #>> '{comment}') ilike '%начисления%'
+limit
+    100;
+
+
+select
+    id, doc
+from
+    applications
+where
+       (doc #>> '{path.to.field1}') ilike '%<text>%'
+    or (doc #>> '{path.to.field2}') ilike '%<text>%'
+    or (doc #>> '{path.to.field3}') ilike '%<text>%'
+    or (doc #>> '{path.to.field4}') ilike '%<text>%'
+    or (doc #>> '{path.to.field5}') ilike '%<text>%'
+limit
+    100;
+
+(
+       (doc #>> '{path.to.field1}') || ' '
+    || (doc #>> '{path.to.field2}') || ' '
+    || (doc #>> '{path.to.field3}') || ' '
+    || (doc #>> '{path.to.field4}') || ' '
+    || (doc #>> '{path.to.field5}')
+
+) ilike '%<text>%'
+
+
+select
+concat_ws(
+    ' ',
+    (doc #>> '{path.to.field1}'),
+    (doc #>> '{path.to.field2}'),
+    (doc #>> '{path.to.field3}'),
+    (doc #>> '{path.to.field4}'),
+    (doc #>> '{path.to.field5}')
+)
+from applications
+limit 10;
+
+select 'foo' || null || 'bar' as result;
+┌────────┐
+│ result │
+├────────┤
+│ <null> │
+└────────┘
+
+create index ...
