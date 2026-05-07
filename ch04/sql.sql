@@ -612,3 +612,30 @@ limit 100;
 │ Planning Time: 0.504 ms                                                                                                                                                                                                                                       │
 │ Execution Time: 32.341 ms                                                                                                                                                                                                                                     │
 └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+create table workers (
+    id integer primary key,
+    name text not null
+);
+
+insert into workers values
+(1, 'Ivanov'),
+(2, 'Petrov'),
+(3, 'Sidorov'),
+(4, 'Mikhailov'),
+(5, 'Minin'),
+(6, 'Pozharsky');
+
+table workers;
+
+┌────┬───────────┐
+│ id │   name    │
+├────┼───────────┤
+│  1 │ Ivanov    │
+│  2 │ Petrov    │
+│  3 │ Sidorov   │
+│  4 │ Mikhailov │
+│  5 │ Minin     │
+│  6 │ Pozharsky │
+└────┴───────────┘
