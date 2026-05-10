@@ -224,6 +224,9 @@ limit 100;
 │ Execution Time: 16.767 ms                                                                                                                        │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+select id, (doc->>'application_id') as app_id
+from applications
+limit 10;
 
 create index if not exists
 idx_applications_application_id
@@ -286,18 +289,22 @@ order by ((doc #>> '{application_id}')::int) asc;
 │               Filter: ((((doc #>> '{application_id}'::text[]))::integer >= 550000) AND (((doc #>> '{application_id}'::text[]))::integer <= 550099)) │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
-explain
+explain analyze
 select id, doc from applications
 where ((doc #>> '{application_id}')::int) = 550099;
 
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                                      QUERY PLAN                                      │
-├──────────────────────────────────────────────────────────────────────────────────────┤
-│ Gather  (cost=1000.00..484846.20 rows=4989 width=1730)                               │
-│   Workers Planned: 2                                                                 │
-│   ->  Parallel Seq Scan on applications  (cost=0.00..483347.30 rows=2079 width=1730) │
-│         Filter: (((doc #>> '{application_id}'::text[]))::integer = 550099)           │
-└──────────────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                            QUERY PLAN                                                             │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Gather  (cost=1000.00..259833.33 rows=5000 width=1830) (actual time=268.194..453.280 rows=1 loops=1)                              │
+│   Workers Planned: 2                                                                                                              │
+│   Workers Launched: 2                                                                                                             │
+│   ->  Parallel Seq Scan on applications  (cost=0.00..258333.33 rows=2083 width=1830) (actual time=88.504..146.584 rows=0 loops=3) │
+│         Filter: (((doc #>> '{application_id}'::text[]))::integer = 550099)                                                        │
+│         Rows Removed by Filter: 333333                                                                                            │
+│ Planning Time: 2.099 ms                                                                                                           │
+│ Execution Time: 453.380 ms                                                                                                        │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 explain
@@ -311,6 +318,27 @@ where ((doc->>'application_id')::int) between 550000 and 550099;
 │   Index Cond: ((((doc ->> 'application_id'::text))::integer >= 550000) AND (((doc ->> 'application_id'::text))::integer <= 550099)) │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+
+create index if not exists
+idx_applications_application_id_text
+on applications using btree
+((doc->>'application_id'));
+
+analyze applications;
+
+explain analyze
+select id, doc
+from applications
+where (doc->>'application_id') = '550099';
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                      QUERY PLAN                                                                      │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_applications_application_id_text on applications  (cost=0.42..8.44 rows=1 width=1830) (actual time=0.060..0.062 rows=1 loops=1) │
+│   Index Cond: ((doc ->> 'application_id'::text) = '550099'::text)                                                                                    │
+│ Planning Time: 0.196 ms                                                                                                                              │
+│ Execution Time: 0.085 ms                                                                                                                             │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 select
     (doc->>'application_id') as doc_id
@@ -339,10 +367,11 @@ limit 100
 insert into applications (doc)
 values ($${
     "some_field": 42,
-    "application_id": "not a number"
+    "application_id": "123a456"
 }$$::jsonb);
 
-ERROR:  invalid input syntax for type integer: "not a number"
+ERROR:  invalid input syntax for type integer: "123a456"
+
 
 
 insert into applications (doc)
@@ -355,14 +384,68 @@ INSERT 0 1
 
 
 
-/*
+
+
+update applications
+set doc['approved_at'] = to_json(current_timestamp - (interval '1 year') * random());
+
+select id, doc['approved_at'] from applications limit 10;
+┌──────────────────────────────────────┬────────────────────────────────────┐
+│                  id                  │                doc                 │
+├──────────────────────────────────────┼────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000009985 │ "2025-10-23T15:59:46.943586+03:00" │
+│ 00000000-0000-0000-0000-000000009986 │ "2025-12-17T17:25:57.205986+03:00" │
+│ 00000000-0000-0000-0000-000000009987 │ "2025-11-18T21:23:10.137186+03:00" │
+│ 00000000-0000-0000-0000-000000009988 │ "2026-01-22T15:32:48.498786+03:00" │
+│ 00000000-0000-0000-0000-000000009989 │ "2025-07-20T23:52:08.908386+03:00" │
+│ 00000000-0000-0000-0000-000000009990 │ "2025-08-07T10:45:12.690786+03:00" │
+│ 00000000-0000-0000-0000-000000009991 │ "2025-12-06T19:23:07.660386+03:00" │
+│ 00000000-0000-0000-0000-000000009992 │ "2026-05-04T18:27:36.681186+03:00" │
+│ 00000000-0000-0000-0000-000000009993 │ "2025-11-16T02:07:33.791586+03:00" │
+│ 00000000-0000-0000-0000-000000009994 │ "2025-11-03T05:24:20.783586+03:00" │
+└──────────────────────────────────────┴────────────────────────────────────┘
+
+
+
 create index if not exists
-idx_applications_created_at
+idx_applications_approved_at
 on applications using btree
-(((doc->>'created_at')::timestamptz));
+(((doc->>'approved_at')::timestamptz at time zone 'utc'));
+
+functions in index expression must be marked IMMUTABLE
+
+
+create or replace function to_tsz_immutable(text)
+  returns timestamptz
+  language sql immutable strict parallel safe
+return $1::timestamptz;
+
+
+create index if not exists
+idx_applications_approved_at
+on applications using btree
+(to_tsz_immutable(doc->>'approved_at'));
+
+
+explain analyze
+select id from applications
+where to_tsz_immutable(doc->>'approved_at') between
+    current_timestamp - interval '3 months'
+    and
+    current_timestamp - interval '1 months'
+limit 100;
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                                      QUERY PLAN                                                                                                      │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=0.43..401.63 rows=100 width=16) (actual time=0.080..0.247 rows=100 loops=1)                                                                                                                             │
+│   ->  Index Scan using idx_applications_approved_at on applications  (cost=0.43..20060.44 rows=5000 width=16) (actual time=0.078..0.233 rows=100 loops=1)                                                            │
+│         Index Cond: ((to_tsz_immutable((doc ->> 'approved_at'::text)) >= (CURRENT_TIMESTAMP - '3 mons'::interval)) AND (to_tsz_immutable((doc ->> 'approved_at'::text)) <= (CURRENT_TIMESTAMP - '1 mon'::interval))) │
+│ Planning Time: 0.257 ms                                                                                                                                                                                              │
+│ Execution Time: 0.277 ms                                                                                                                                                                                             │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 analyze applications;
-*/
 
 
 create index if not exists

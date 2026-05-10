@@ -28,3 +28,8 @@ name_to_ids = {
     'Ivan': [101],
     'John': [202, 345, 582],
 }
+
+
+FIELD_APP_ID = orm.raw("((doc #>> '{application_id}')::int)")
+
+Applications.all().filter(FIELD_APP_ID.eq(1199)).query()
