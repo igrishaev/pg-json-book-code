@@ -492,6 +492,21 @@ limit 10;
 │         Index Cond: ((doc #>> '{organization,short_name}'::text[]) = 'Organization 543'::text)                        │
 └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+select from entity where a = 1;
+select from entity where b = 'test';
+select from entity where c = true;
+
+select from entity
+where
+        a = 1
+    and b = 'test'
+    and c = true;
+
+
+/////////////
+
+
+
 create index if not exists
 idx_applications_status
 on applications using btree
