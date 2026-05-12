@@ -461,6 +461,29 @@ from applications
 where (doc #>> '{organization,short_name}') = 'Organization 543'
 limit 100;
 
+
+select * from pg_stat_user_indexes
+where relname = 'applications'
+-- order by last_idx_scan desc nulls last
+limit 10;
+
+
+┌──────────────────────────────────────────────────┬──────────┬──────────────┬───────────────┐
+│                   indexrelname                   │ idx_scan │ idx_tup_read │ idx_tup_fetch │
+├──────────────────────────────────────────────────┼──────────┼──────────────┼───────────────┤
+│ applications_pkey                                │        4 │            4 │             4 │
+│ idx_applications_created_at                      │        5 │       258830 │             1 │
+│ idx_applications_application_id                  │        1 │          100 │           100 │
+│ idx_applications_org_short_name_hash             │        6 │         4790 │           790 │
+│ idx_applications_status                          │        6 │      1495416 │             0 │
+│ idx_applications_status_org_short_name           │        1 │          263 │           263 │
+│ idx_applications_application_id_trgm             │        1 │           20 │             0 │
+│ idx_applications_application_org_short_code_trgm │        2 │         2000 │             0 │
+│ idx_applications_application_trgm_pattern        │        4 │         4138 │             0 │
+│ idx_applications_application_id_text             │        2 │            2 │             2 │
+└──────────────────────────────────────────────────┴──────────┴──────────────┴───────────────┘
+
+
 ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                      QUERY PLAN                                                       │
 ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
