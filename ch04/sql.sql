@@ -506,13 +506,166 @@ where
 /////////////
 
 
+select id, doc
+from applications
+where
+        doc->>'assigned_to' = 'ivanov@acme.com'
+    and doc->>'status' = 'active';
+
+
+create or replace function generate_status() returns text
+language plpgsql strict parallel safe
+as $func$
+declare
+    r float4;
+begin
+    r := random();
+    case
+        when r < 0.65 then return 'archived';  -- 65%
+        when r < 0.85 then return 'approved';  -- 20%
+        when r < 0.95 then return 'rejected';  -- 10%
+        else return 'active';                  --  5%
+    end case;
+end;
+$func$;
+
+update applications set
+doc['assigned_to'] = to_jsonb(format('user_%s@test.com', (doc->>'application_id')::int % 1000)),
+doc['status'] = to_jsonb(generate_status());
+
+
+select
+    to_char(count(id) / 1000000.0, '0.9999') as ratio,
+    doc->>'status' as status
+from applications
+group by 2
+order by 1 desc;
+
+┌─────────┬──────────┐
+│  ratio  │  status  │
+├─────────┼──────────┤
+│  0.6498 │ archived │
+│  0.2001 │ approved │
+│  0.1002 │ rejected │
+│  0.0499 │ active   │
+└─────────┴──────────┘
 
 create index if not exists
 idx_applications_status
 on applications using btree
 ((doc->>'status'));
 
+create index if not exists
+idx_applications_assigned_to
+on applications using btree
+((doc->>'assigned_to'));
+
 analyze applications;
+
+explain analyze
+select id, doc from applications
+where
+     (doc->>'status') = 'active'
+ and (doc->>'assigned_to') = 'user_999@test.com';
+
+-- (45 rows)
+
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                   QUERY PLAN                                                                   │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Bitmap Heap Scan on applications  (cost=407.13..526.75 rows=30 width=1915) (actual time=8.974..9.047 rows=45 loops=1)                          │
+│   Recheck Cond: (((doc ->> 'assigned_to'::text) = 'user_999@test.com'::text) AND ((doc ->> 'status'::text) = 'active'::text))                  │
+│   Heap Blocks: exact=45                                                                                                                        │
+│   ->  BitmapAnd  (cost=407.13..407.13 rows=30 width=0) (actual time=8.938..8.940 rows=0 loops=1)                                               │
+│         ->  Bitmap Index Scan on idx_applications_assigned_to  (cost=0.00..8.99 rows=609 width=0) (actual time=0.361..0.361 rows=1000 loops=1) │
+│               Index Cond: ((doc ->> 'assigned_to'::text) = 'user_999@test.com'::text)                                                          │
+│         ->  Bitmap Index Scan on idx_applications_status  (cost=0.00..397.88 rows=30060 width=0) (actual time=7.956..7.956 rows=49918 loops=1) │
+│               Index Cond: ((doc ->> 'status'::text) = 'active'::text)                                                                          │
+│ Planning Time: 0.316 ms                                                                                                                        │
+│ Execution Time: 9.338 ms                                                                                                                       │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+create index if not exists
+idx_applications_status_assigned_to
+on applications using btree
+((doc->>'status'), (doc->>'assigned_to'));
+
+analyze applications;
+
+explain analyze
+select id, doc from applications
+where
+     (doc->>'status') = 'active'
+ and (doc->>'assigned_to') = 'user_999@test.com';
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                       QUERY PLAN                                                                        │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_applications_status_assigned_to on applications  (cost=0.42..185.65 rows=51 width=1915) (actual time=0.139..0.223 rows=45 loops=1) │
+│   Index Cond: (((doc ->> 'status'::text) = 'active'::text) AND ((doc ->> 'assigned_to'::text) = 'user_999@test.com'::text))                             │
+│ Planning Time: 1.733 ms                                                                                                                                 │
+│ Execution Time: 0.270 ms                                                                                                                                │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+create index if not exists
+idx_applications_assigned_to_active
+on applications using btree
+((doc->>'assigned_to'))
+where (doc->>'status' = 'active');
+
+create index if not exists
+idx_applications_assigned_to_active_not_vip
+on applications using btree
+((doc->>'assigned_to'))
+where
+    (doc->>'status' = 'active')
+and (not (doc->>'is_vip')::boolean);
+
+
+select id, doc from applications
+where
+     (doc->>'status') = 'active'
+ and (doc->>'assigned_to') = 'user_999@test.com'
+ and (not (doc->>'is_vip')::boolean);
+
+
+analyze applications;
+
+
+explain analyze
+select id, doc from applications
+where
+     (doc->>'status') = 'active'
+ and (doc->>'assigned_to') = 'user_999@test.com';
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                       QUERY PLAN                                                                        │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_applications_assigned_to_active on applications  (cost=0.29..200.98 rows=49 width=1915) (actual time=0.434..0.482 rows=45 loops=1) │
+│   Index Cond: ((doc ->> 'assigned_to'::text) = 'user_999@test.com'::text)                                                                               │
+│ Planning Time: 0.658 ms                                                                                                                                 │
+│ Execution Time: 0.499 ms                                                                                                                                │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+create index if not exists
+idx_applications_assigned_to_status
+on applications using btree
+((doc->>'assigned_to'), (doc->>'status'));
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                       QUERY PLAN                                                                        │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_applications_assigned_to_status on applications  (cost=0.42..209.44 rows=51 width=1915) (actual time=0.082..0.196 rows=45 loops=1) │
+│   Index Cond: (((doc ->> 'assigned_to'::text) = 'user_999@test.com'::text) AND ((doc ->> 'status'::text) = 'active'::text))                             │
+│ Planning Time: 0.665 ms                                                                                                                                 │
+│ Execution Time: 0.223 ms                                                                                                                                │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
 
 
 
@@ -522,6 +675,7 @@ from applications
 where
     created_at > '2026-07-30 00:00:00Z'
     and (doc->>'status') = 'active';
+
 
 
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐

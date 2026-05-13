@@ -778,3 +778,42 @@ create table patients (
     created_at timestamptz not null default current_timestamp,
     updated_at timestamptz
 );
+
+
+create or replace function generate_city() returns text
+language plpgsql strict parallel safe
+as $func$
+declare
+    r float4;
+begin
+    r := random();
+    case
+        when r < 0.65 then return 'Moscow';
+        when r < 0.85 then return 'Saint Petersburg';
+        when r < 0.95 then return 'Voronezh';
+        when r < 0.99 then return 'Chita';
+        else return 'Kopeysk';
+    end case;
+end;
+$func$;
+
+create table users (id integer primary key, city text not null);
+
+insert into users
+select x, generate_city()
+from generate_series(1, 1000000) as seq(x);
+
+select to_char(count(id) / 1000000.0, '0.9999') as ratio, city
+from users
+group by city
+order by 1 desc;
+
+┌─────────┬──────────────────┐
+│  ratio  │       city       │
+├─────────┼──────────────────┤
+│  0.6495 │ Moscow           │
+│  0.2006 │ Saint Petersburg │
+│  0.1000 │ Voronezh         │
+│  0.0399 │ Chita            │
+│  0.0100 │ Kopeysk          │
+└─────────┴──────────────────┘
