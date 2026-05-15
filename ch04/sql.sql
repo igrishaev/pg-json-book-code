@@ -898,11 +898,21 @@ from
 where
         (doc #>> '{application_id}') ilike '%12345%'
     and (doc #>> '{organization,short_name}') ilike 'Acme'
-    and (doc #>> '{created_by,name}') ilike '%Мария%'
-    and (doc #>> '{comment}') ilike '%начисления%'
+    and (doc #>> '{created_by,name}') ilike '%Maria%'
+    and (doc #>> '{comment}') ilike '%reconciliation%'
 limit
     100;
 
+
+(doc #>> '{path.to.field}') ilike '%12345%'
+
+
+create index if not exists
+idx_applications_trgm_path_to_field
+on applications using gin
+((doc #>> '{path.to.field}') gin_trgm_ops);
+
+analyze applications;
 
 explain analyze
 select
@@ -917,17 +927,67 @@ where
 limit
     100;
 
-┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                                                                QUERY PLAN                                                                                                                                 │
-├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Limit  (cost=0.00..5724.80 rows=100 width=1830) (actual time=8.949..1287.774 rows=20 loops=1)                                                                                                                                                                             │
-│   ->  Seq Scan on applications  (cost=0.00..280000.00 rows=4891 width=1830) (actual time=8.948..1287.771 rows=20 loops=1)                                                                                                                                                 │
-│         Filter: (((doc #>> '{application_id}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{organization,short_name}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{created_by,name}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{comment}'::text[]) ~~* '%12345%'::text)) │
-│         Rows Removed by Filter: 999981                                                                                                                                                                                                                                    │
-│ Planning Time: 0.142 ms                                                                                                                                                                                                                                                   │
-│ Execution Time: 1287.796 ms                                                                                                                                                                                                                                               │
-└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                                                                   QUERY PLAN                                                                                                                                    │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=227.37..618.43 rows=100 width=1915) (actual time=2.877..2.956 rows=20 loops=1)                                                                                                                                                                                     │
+│   ->  Bitmap Heap Scan on applications  (cost=227.37..1775.97 rows=396 width=1915) (actual time=2.875..2.950 rows=20 loops=1)                                                                                                                                                   │
+│         Recheck Cond: (((doc #>> '{application_id}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{organization,short_name}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{created_by,name}'::text[]) ~~* '%12345%'::text) OR ((doc #>> '{comment}'::text[]) ~~* '%12345%'::text)) │
+│         Heap Blocks: exact=13                                                                                                                                                                                                                                                   │
+│         ->  BitmapOr  (cost=227.37..227.37 rows=396 width=0) (actual time=2.850..2.852 rows=0 loops=1)                                                                                                                                                                          │
+│               ->  Bitmap Index Scan on idx_applications_trgm_path_application_id  (cost=0.00..32.75 rows=100 width=0) (actual time=1.117..1.117 rows=20 loops=1)                                                                                                                │
+│                     Index Cond: ((doc #>> '{application_id}'::text[]) ~~* '%12345%'::text)                                                                                                                                                                                      │
+│               ->  Bitmap Index Scan on idx_applications_trgm_path_org  (cost=0.00..68.74 rows=98 width=0) (actual time=0.323..0.323 rows=0 loops=1)                                                                                                                             │
+│                     Index Cond: ((doc #>> '{organization,short_name}'::text[]) ~~* '%12345%'::text)                                                                                                                                                                             │
+│               ->  Bitmap Index Scan on idx_applications_trgm_path_created_by_name  (cost=0.00..56.74 rows=98 width=0) (actual time=0.310..0.310 rows=0 loops=1)                                                                                                                 │
+│                     Index Cond: ((doc #>> '{created_by,name}'::text[]) ~~* '%12345%'::text)                                                                                                                                                                                     │
+│               ->  Bitmap Index Scan on idx_applications_trgm_path_comment  (cost=0.00..68.75 rows=100 width=0) (actual time=1.098..1.098 rows=20 loops=1)                                                                                                                       │
+│                     Index Cond: ((doc #>> '{comment}'::text[]) ~~* '%12345%'::text)                                                                                                                                                                                             │
+│ Planning Time: 1.042 ms                                                                                                                                                                                                                                                         │
+│ Execution Time: 3.050 ms
+
+(field1 ilike 'pattern') or (field2 ilike 'pattern') or ...
+
+(field1 || '' || field1 || ...) ilike 'pattern'
+
+(
+       (doc #>> '{application_id}') || ' '
+    || (doc #>> '{organization,short_name}') || ' '
+    || (doc #>> '{created_by,name}') || ' '
+    || (doc #>> '{comment}')
+)
+
+
+(
+       coalesce((doc #>> '{application_id}'), '') || ' '
+    || coalesce((doc #>> '{organization,short_name}'), '') || ' '
+    || coalesce((doc #>> '{created_by,name}'), '') || ' '
+    || coalesce((doc #>> '{comment}'), '')
+)
+
+
+concat_ws(
+    ' ',
+    (doc #>> '{application_id}'),
+    (doc #>> '{organization,short_name}'),
+    (doc #>> '{created_by,name}'),
+    (doc #>> '{comment}')
+)
+
+
+create index if not exists
+idx_applications_application_trgm_pattern
+on applications using gin
+((concat_ws(
+    ' ',
+    (doc #>> '{application_id}'),
+    (doc #>> '{organization,short_name}'),
+    (doc #>> '{created_by,name}'),
+    (doc #>> '{comment}')
+)) gin_trgm_ops);
+
+functions in index expression must be marked IMMUTABLE
 
 select id, (
        (doc #>> '{application_id}') || ' '
@@ -998,9 +1058,10 @@ on applications using gin
 
 
 -- https://stackoverflow.com/questions/54372666/create-an-immutable-clone-of-concat-ws
-CREATE OR REPLACE FUNCTION immutable_concat_ws(text, VARIADIC text[])
-  RETURNS text
-  LANGUAGE internal IMMUTABLE PARALLEL SAFE AS 'text_concat_ws';
+
+create or replace function immutable_concat_ws(text, variadic text[])
+  returns text
+  language internal immutable parallel safe AS 'text_concat_ws';
 
 
 create index if not exists
@@ -1022,24 +1083,65 @@ where (immutable_concat_ws(
     (doc #>> '{organization,short_name}'),
     (doc #>> '{created_by,name}'),
     (doc #>> '{comment}')
-)) ilike '%User 0925%'
+)) ilike '%12345%'
 limit 100;
 
--- '%Organization 927%'
---
 
-┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                                                          QUERY PLAN                                                                                                                           │
-├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Limit  (cost=240.78..637.27 rows=100 width=16) (actual time=31.892..32.272 rows=100 loops=1)                                                                                                                                                                  │
-│   ->  Bitmap Heap Scan on applications  (cost=240.78..637.27 rows=100 width=16) (actual time=31.890..32.262 rows=100 loops=1)                                                                                                                                 │
-│         Recheck Cond: (immutable_concat_ws(' '::text, VARIADIC ARRAY[(doc #>> '{application_id}'::text[]), (doc #>> '{organization,short_name}'::text[]), (doc #>> '{created_by,name}'::text[]), (doc #>> '{comment}'::text[])]) ~~* '%User 0925%'::text)     │
-│         Heap Blocks: exact=100                                                                                                                                                                                                                                │
-│         ->  Bitmap Index Scan on idx_applications_application_trgm_pattern  (cost=0.00..240.75 rows=100 width=0) (actual time=31.694..31.694 rows=1009 loops=1)                                                                                               │
-│               Index Cond: (immutable_concat_ws(' '::text, VARIADIC ARRAY[(doc #>> '{application_id}'::text[]), (doc #>> '{organization,short_name}'::text[]), (doc #>> '{created_by,name}'::text[]), (doc #>> '{comment}'::text[])]) ~~* '%User 0925%'::text) │
-│ Planning Time: 0.504 ms                                                                                                                                                                                                                                       │
-│ Execution Time: 32.341 ms                                                                                                                                                                                                                                     │
-└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+create or replace function application_search_pattern(doc jsonb)
+returns text
+language sql immutable strict parallel safe
+return immutable_concat_ws(
+    ' ',
+    (doc #>> '{application_id}'),
+    (doc #>> '{organization,short_name}'),
+    (doc #>> '{created_by,name}'),
+    (doc #>> '{comment}')
+);
+
+
+select id, application_search_pattern(doc)
+from applications
+limit 100;
+
+drop index if exists
+idx_applications_application_trgm_pattern;
+
+
+create index if not exists
+idx_applications_application_trgm_pattern
+on applications using gin
+((application_search_pattern(doc)) gin_trgm_ops);
+
+explain analyze
+select id from applications
+where application_search_pattern(doc) ilike '%12345%'
+limit 100;
+
+
+create or replace function application_search_pattern(doc jsonb)
+returns text
+language sql immutable strict parallel safe
+return immutable_concat_ws(
+    ' ',
+    (doc #>> '{application_id}'),
+    (doc #>> '{organization,short_name}'),
+    (doc #>> '{created_by,name}'),
+    (doc #>> '{comment}'),
+    (doc #>> '{assigned_to}')
+);
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                                                        QUERY PLAN                                                                                                                         │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=168.78..565.28 rows=100 width=16) (actual time=0.534..0.605 rows=20 loops=1)                                                                                                                                                                 │
+│   ->  Bitmap Heap Scan on applications  (cost=168.78..565.28 rows=100 width=16) (actual time=0.532..0.602 rows=20 loops=1)                                                                                                                                │
+│         Recheck Cond: (immutable_concat_ws(' '::text, VARIADIC ARRAY[(doc #>> '{application_id}'::text[]), (doc #>> '{organization,short_name}'::text[]), (doc #>> '{created_by,name}'::text[]), (doc #>> '{comment}'::text[])]) ~~* '%12345%'::text)     │
+│         Heap Blocks: exact=13                                                                                                                                                                                                                             │
+│         ->  Bitmap Index Scan on idx_applications_application_trgm_pattern  (cost=0.00..168.75 rows=100 width=0) (actual time=0.504..0.504 rows=20 loops=1)                                                                                               │
+│               Index Cond: (immutable_concat_ws(' '::text, VARIADIC ARRAY[(doc #>> '{application_id}'::text[]), (doc #>> '{organization,short_name}'::text[]), (doc #>> '{created_by,name}'::text[]), (doc #>> '{comment}'::text[])]) ~~* '%12345%'::text) │
+│ Planning Time: 0.542 ms                                                                                                                                                                                                                                   │
+│ Execution Time: 0.686 ms                                                                                                                                                                                                                                  │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 create table workers (
