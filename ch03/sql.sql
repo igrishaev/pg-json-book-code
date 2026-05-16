@@ -345,95 +345,6 @@ as vals(x);
 │ -01.00 │
 └────────┘
 
-insert into applications (id, doc, created_at)
-select
-    gen_uuid(x),
-    jsonb_build_object(
-        'id', gen_uuid(x),
-        'status', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
-        'created_at', (now() - interval '1 day' * random() * 365),
-        'created_by', jsonb_build_object(
-            'id', gen_uuid(x % 1000),
-            'email', (format('user_%s@test.com', to_char(x % 1000, 'FM0000'))),
-            'name', (format('User %s', to_char(x % 1000, 'FM0000')))
-        ),
-        'application_id', x,
-        'organization', jsonb_build_object(
-            'id', gen_uuid(x % 1000),
-            'code', x % 1000,
-            'short_name', format('Organization %s', x % 1000)
-        ),
-        'comment', format('Comment number #%s', x),
-        'amounts', jsonb_build_array(
-            jsonb_build_object(
-                'amount', (ceil(random() * 100000000)),
-                'currency', ((array['USD', 'EUR', 'RUB'])[ceil(random() * 3)]),
-                'period', jsonb_build_object('y', ceil(random() * 10), 'm', ceil(random() * 10), 'w', ceil(random() * 10), 'd', ceil(random() * 10))
-            ),
-            jsonb_build_object(
-                'amount', (ceil(random() * 100000000)),
-                'currency', ((array['USD', 'EUR', 'RUB'])[ceil(random() * 3)]),
-                'period', jsonb_build_object('y', ceil(random() * 10), 'm', ceil(random() * 10), 'w', ceil(random() * 10), 'd', ceil(random() * 10))
-            )
-        ),
-        'departments', jsonb_build_array(
-            jsonb_build_object(
-                'id', gen_uuid((x % 25)),
-                'code', format('dep_%s', (x % 25)),
-                'name', format('Department %s', (x % 25)),
-                'users', jsonb_build_array(
-                    jsonb_build_object(
-                        'id', gen_uuid((x % 1000)),
-                        'email', (format('user_%s@test.com', (x % 1000))),
-                        'name', (format('User %s', (x % 1000)))
-                    ),
-                    jsonb_build_object(
-                        'id', gen_uuid((x % 1000 + 10)),
-                        'email', (format('user_%s@test.com', (x % 1000 + 10))),
-                        'name', (format('User %s', (x % 1000 + 10)))
-                    )
-                )
-            ),
-            jsonb_build_object(
-                'id', gen_uuid((x % 25 + 10)),
-                'code', format('dep_%s', (x % 25 + 10)),
-                'name', format('Department %s', (x % 25 + 10)),
-                'users', jsonb_build_array(
-                    jsonb_build_object(
-                        'id', gen_uuid((x % 1000 + 20)),
-                        'email', (format('user_%s@test.com', (x % 1000 + 20))),
-                        'name', (format('User %s', (x % 1000 + 20)))
-                    ),
-                    jsonb_build_object(
-                        'id', gen_uuid((x % 25 + 30)),
-                        'email', (format('user_%s@test.com', (x % 25 + 30))),
-                        'name', (format('User %s', (x % 25 + 30)))
-                    )
-                )
-            )
-        ),
-        'journal', jsonb_build_array(
-            jsonb_build_object(
-                'event', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
-                'datetime', (now() - interval '1 day' * random() * 365),
-                'user_id', uuid_generate_v4()
-            ),
-            jsonb_build_object(
-                'event', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
-                'datetime', (now() - interval '1 day' * random() * 365),
-                'user_id', uuid_generate_v4()
-            ),
-            jsonb_build_object(
-                'event', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
-                'datetime', (now() - interval '1 day' * random() * 365),
-                'user_id', uuid_generate_v4()
-            )
-        )
-    ),
-    (now() - interval '1 day' * random() * 365)
-from
-    generate_series(1, 9) as seq(x);
-
 
 select doc as doc
 from applications
@@ -483,12 +394,14 @@ select
                     jsonb_build_object(
                         'id', gen_uuid((x % 1000)),
                         'email', (format('user_%s@test.com', (x % 1000))),
-                        'name', (format('User %s', (x % 1000)))
+                        'name', (format('User %s', (x % 1000))),
+                        'role', ((array['manager', 'analyst', 'support', 'reader', 'decision-maker', 'lead', 'principal'])[ceil(random() * 7)])
                     ),
                     jsonb_build_object(
                         'id', gen_uuid((x % 1000 + 10)),
                         'email', (format('user_%s@test.com', (x % 1000 + 10))),
-                        'name', (format('User %s', (x % 1000 + 10)))
+                        'name', (format('User %s', (x % 1000 + 10))),
+                        'role', ((array['manager', 'analyst', 'support', 'reader', 'decision-maker', 'lead', 'principal'])[ceil(random() * 7)])
                     )
                 )
             ),
@@ -500,12 +413,14 @@ select
                     jsonb_build_object(
                         'id', gen_uuid((x % 1000 + 20)),
                         'email', (format('user_%s@test.com', (x % 1000 + 20))),
-                        'name', (format('User %s', (x % 1000 + 20)))
+                        'name', (format('User %s', (x % 1000 + 20))),
+                        'role', ((array['manager', 'analyst', 'support', 'reader', 'decision-maker', 'lead', 'principal'])[ceil(random() * 7)])
                     ),
                     jsonb_build_object(
                         'id', gen_uuid((x % 25 + 30)),
                         'email', (format('user_%s@test.com', (x % 25 + 30))),
-                        'name', (format('User %s', (x % 25 + 30)))
+                        'name', (format('User %s', (x % 25 + 30))),
+                        'role', ((array['manager', 'analyst', 'support', 'reader', 'decision-maker', 'lead', 'principal'])[ceil(random() * 7)])
                     )
                 )
             )

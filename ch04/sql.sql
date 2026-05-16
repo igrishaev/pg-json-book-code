@@ -1184,7 +1184,10 @@ select
     jsonb_pretty(doc['departments'])
 from applications
 where doc @> $${
-    "departments": [{"users": [{"email": "user_123@test.com"}]}]
+    "departments": [{"users": [{
+      "email": "user_123@test.com",
+      "role": "lead"
+    }]}]
 }
 $$::jsonb
 limit 100;
@@ -1216,7 +1219,10 @@ select
     jsonb_pretty(doc['departments'])
 from applications
 where doc['departments'] @> $$[
-    {"users": [{"email": "user_123@test.com"}]}
+    {"users": [{
+        "email": "user_123@test.com",
+        "role": "lead"
+    }]}
 ]
 $$::jsonb
 limit 100;
@@ -1234,6 +1240,27 @@ limit 100;
 │ Execution Time: 22.553 ms                                                                                                                                          │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+
+SELECT pg_size_pretty(pg_total_relation_size('applications'));
+┌────────────────┐
+│ pg_size_pretty │
+├────────────────┤
+│ 3608 MB        │
+└────────────────┘
+
+SELECT pg_size_pretty(pg_total_relation_size('idx_applications_doc_gin_jsonb_ops'));
+┌────────────────┐
+│ pg_size_pretty │
+├────────────────┤
+│ 1086 MB        │
+└────────────────┘
+
+SELECT pg_size_pretty(pg_total_relation_size('idx_applications_doc_departments_gin_jsonb_ops'));
+┌────────────────┐
+│ pg_size_pretty │
+├────────────────┤
+│ 78 MB          │
+└────────────────┘
 
 
 
