@@ -1143,6 +1143,100 @@ return immutable_concat_ws(
 │ Execution Time: 0.686 ms                                                                                                                                                                                                                                  │
 └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+explain analyze
+select id, application_search_pattern(doc)
+from applications
+where application_search_pattern(doc) ~ 'Organization 313.+?#22313'
+limit 100;
+
+┌──────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────┐
+│                  id                  │                        application_search_pattern                        │
+├──────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000022313 │ 22313 Organization 313 User 0313 Comment number #22313 user_313@test.com │
+└──────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                          QUERY PLAN                                                                           │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=444.78..890.03 rows=100 width=48) (actual time=69.670..69.904 rows=1 loops=1)                                                                    │
+│   ->  Bitmap Heap Scan on applications  (cost=444.78..890.03 rows=100 width=48) (actual time=69.668..69.903 rows=1 loops=1)                                   │
+│         Recheck Cond: (application_search_pattern(doc) ~ 'Organization 313.+?#22313'::text)                                                                   │
+│         Rows Removed by Index Recheck: 19                                                                                                                     │
+│         Heap Blocks: exact=13                                                                                                                                 │
+│         ->  Bitmap Index Scan on idx_applications_application_trgm_pattern  (cost=0.00..444.75 rows=100 width=0) (actual time=69.503..69.503 rows=20 loops=1) │
+│               Index Cond: (application_search_pattern(doc) ~ 'Organization 313.+?#22313'::text)                                                               │
+│ Planning Time: 1.735 ms                                                                                                                                       │
+│ Execution Time: 69.949 ms                                                                                                                                     │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+create index if not exists
+idx_applications_doc_gin_jsonb_ops
+on applications using gin
+(doc jsonb_ops);
+
+analyze applications;
+
+explain analyze
+select
+    id,
+    jsonb_pretty(doc['departments'])
+from applications
+where doc @> $${
+    "departments": [{"users": [{"email": "user_123@test.com"}]}]
+}
+$$::jsonb
+limit 100;
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                         QUERY PLAN                                                                         │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=189.50..524.92 rows=100 width=48) (actual time=26.982..28.416 rows=100 loops=1)                                                               │
+│   ->  Bitmap Heap Scan on applications  (cost=189.50..33731.03 rows=10000 width=48) (actual time=26.980..28.406 rows=100 loops=1)                          │
+│         Recheck Cond: (doc @> '{"departments": [{"users": [{"email": "user_123@test.com"}]}]}'::jsonb)                                                     │
+│         Heap Blocks: exact=100                                                                                                                             │
+│         ->  Bitmap Index Scan on idx_applications_doc_gin_jsonb_ops  (cost=0.00..187.00 rows=10000 width=0) (actual time=26.623..26.623 rows=3000 loops=1) │
+│               Index Cond: (doc @> '{"departments": [{"users": [{"email": "user_123@test.com"}]}]}'::jsonb)                                                 │
+│ Planning Time: 91.763 ms                                                                                                                                   │
+│ Execution Time: 28.460 ms                                                                                                                                  │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+create index if not exists
+idx_applications_doc_departments_gin_jsonb_ops
+on applications using gin
+((doc['departments']) jsonb_ops);
+
+
+explain analyze
+select
+    id,
+    jsonb_pretty(doc['departments'])
+from applications
+where doc['departments'] @> $$[
+    {"users": [{"email": "user_123@test.com"}]}
+]
+$$::jsonb
+limit 100;
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                             QUERY PLAN                                                                             │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=64.76..456.34 rows=99 width=48) (actual time=21.711..22.509 rows=100 loops=1)                                                                         │
+│   ->  Bitmap Heap Scan on applications  (cost=64.76..456.34 rows=99 width=48) (actual time=21.709..22.501 rows=100 loops=1)                                        │
+│         Recheck Cond: (doc['departments'::text] @> '[{"users": [{"email": "user_123@test.com"}]}]'::jsonb)                                                         │
+│         Heap Blocks: exact=100                                                                                                                                     │
+│         ->  Bitmap Index Scan on idx_applications_doc_departments_gin_jsonb_ops  (cost=0.00..64.74 rows=99 width=0) (actual time=21.281..21.281 rows=3000 loops=1) │
+│               Index Cond: (doc['departments'::text] @> '[{"users": [{"email": "user_123@test.com"}]}]'::jsonb)                                                     │
+│ Planning Time: 0.780 ms                                                                                                                                            │
+│ Execution Time: 22.553 ms                                                                                                                                          │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
 
 create table workers (
     id integer primary key,
