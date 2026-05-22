@@ -632,6 +632,45 @@ where
  and (not (doc->>'is_vip')::boolean);
 
 
+create or replace function generate_credit_type() returns text
+language plpgsql strict parallel safe
+as $func$
+declare
+    r float4;
+begin
+    r := random();
+    case
+        when r < 0.85 then return 'org';  -- 85%
+        else return 'country';            -- 15%
+    end case;
+end;
+$func$;
+
+
+update applications set
+doc['credit_type'] = to_jsonb(generate_credit_type());
+
+
+create index if not exists
+idx_applications_active_org_assigned_to
+on applications using btree
+((doc->>'assigned_to'))
+where
+    (doc->>'status' = 'active')
+and (doc->>'credit_type') = 'org';
+
+analyze applications;
+
+explain analyze
+select id, doc from applications
+where
+    (doc->>'status') = 'active'
+and (doc->>'credit_type') = 'org'
+and (doc->>'assigned_to') = 'user_999@test.com';
+
+
+
+
 analyze applications;
 
 

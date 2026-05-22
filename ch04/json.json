@@ -4,3 +4,9 @@
     "created_by": "Maria",
     "comment": "reconciliation"
 }
+
+
+{
+    "type": "string",
+    "format": "date-time"
+}
