@@ -1252,6 +1252,10 @@ select id from applications
 where doc ?& '{application_id,status,amounts}'
 limit 10;
 
+select id from applications
+where not (doc ?& '{application_id,status,amounts}')
+limit 10;
+
 create index if not exists
 idx_applications_doc_departments_gin_jsonb_ops
 on applications using gin
