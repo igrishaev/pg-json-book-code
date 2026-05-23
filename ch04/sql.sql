@@ -988,7 +988,7 @@ limit
 
 (field1 ilike 'pattern') or (field2 ilike 'pattern') or ...
 
-(field1 || '' || field1 || ...) ilike 'pattern'
+(field1 || ' ' || field1 || ...) ilike 'pattern'
 
 (
        (doc #>> '{application_id}') || ' '
@@ -1335,3 +1335,52 @@ table workers;
 │  5 │ Minin     │
 │  6 │ Pozharsky │
 └────┴───────────┘
+
+
+SELECT pg_size_pretty(pg_total_relation_size('idx_applications_created_at'));
+
+users.0.name = Ivan
+users.1.name = Huan
+
+
+departments,0,users,1
+
+
+explain analyze
+select id, doc from applications
+where
+    (doc->>'status') = 'active'
+and (doc->>'credit_type') = 'org'
+and (doc->>'assigned_to') = 'user_999@test.com';
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                        QUERY PLAN                                                                        │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_applications_active_org_assigned_to on applications  (cost=0.29..8.31 rows=1 width=1970) (actual time=0.039..0.097 rows=30 loops=1) │
+│   Index Cond: ((doc ->> 'assigned_to'::text) = 'user_999@test.com'::text)                                                                                │
+│ Planning Time: 0.203 ms                                                                                                                                  │
+│ Execution Time: 0.125 ms                                                                                                                                 │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+select id, doc from applications
+where
+    (doc->>'status') = 'active'
+and (doc->>'credit_type') = 'org'
+and (doc->>'assigned_to') = 'user_999@test.com';
+
+
+create index foo on applications
+using btree (
+  (doc->>'status'),
+  (doc->>'credit_type'),
+  (doc->>'assigned_to')
+);
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                  QUERY PLAN                                                                                   │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using foo on applications  (cost=0.42..152.21 rows=41 width=1970) (actual time=0.078..0.137 rows=30 loops=1)                                                       │
+│   Index Cond: (((doc ->> 'status'::text) = 'active'::text) AND ((doc ->> 'credit_type'::text) = 'org'::text) AND ((doc ->> 'assigned_to'::text) = 'user_999@test.com'::text)) │
+│ Planning Time: 2.745 ms                                                                                                                                                       │
+│ Execution Time: 0.162 ms                                                                                                                                                      │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘

@@ -10,3 +10,48 @@
     "type": "string",
     "format": "date-time"
 }
+
+{"users": [{"name": "Ivan"},
+           {"name": "Huan"}]}
+
+
+"departments": [
+    {
+        "id": "224899ae-fac7-4555-8a94-f41f3c9ed634",
+        "code": "risk",
+        "name": "Risk Department",
+        "users": [
+            {
+                "id": "3f798e66-43a3-4d78-b5f9-3c3740b6676b",
+                "email": "mironov.p@acme.com",
+                "name": "Petr Mironov",
+                "role": "manager"
+            },
+            {
+                "id": "9ecef728-a3bb-4a1d-85d7-51dff2401c0b",
+                "email": "smith.k@acme.com",
+                "name": "Karol Smith",
+                "role": "analyst"
+            }
+        ]
+    },
+    {
+        "id": "7513991b-9951-4bce-ad4a-470ff2d3febf",
+        "code": "analytics",
+        "name": "Analytics Department",
+        "users": [
+            {
+                "id": "361a08a5-3991-4b2a-9d49-8e4cf77b876b",
+                "email": "smirnov.i@acme.com",
+                "name": "Igor Smirnov",
+                "role": "reader"
+            },
+            {
+                "id": "11da81b9-b125-4a7e-9965-958cc5593a3e",
+                "email": "jackson.j@acme.com",
+                "name": "John Jackson",
+                "role": "support"
+            }
+        ]
+    }
+]
