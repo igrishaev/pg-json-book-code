@@ -383,7 +383,13 @@ values ($${
 INSERT 0 1
 
 
+update applications
+set doc['__migrate__'] = to_json(true)
+where ...;
 
+update applications
+set ...
+where doc ? '__migrate__';
 
 
 update applications
@@ -1223,12 +1229,11 @@ select
     jsonb_pretty(doc['departments'])
 from applications
 where doc @> $${
-    "departments": [{"users": [{
-      "email": "user_123@test.com",
-      "role": "lead"
-    }]}]
-}
-$$::jsonb
+  "departments": [{"users": [{
+    "email": "user_123@test.com",
+    "role": "lead"
+  }]}]
+}$$::jsonb
 limit 100;
 
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -1272,8 +1277,7 @@ where doc['departments'] @> $$[
         "email": "user_123@test.com",
         "role": "lead"
     }]}
-]
-$$::jsonb
+]$$::jsonb
 limit 100;
 
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -1290,26 +1294,41 @@ limit 100;
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
-SELECT pg_size_pretty(pg_total_relation_size('applications'));
+SELECT pg_size_pretty(pg_total_relation_size('applications'))
+as app_table_size;
+
 ┌────────────────┐
-│ pg_size_pretty │
+│ app_table_size │
 ├────────────────┤
-│ 3608 MB        │
+│ 4877 MB        │
 └────────────────┘
 
-SELECT pg_size_pretty(pg_total_relation_size('idx_applications_doc_gin_jsonb_ops'));
-┌────────────────┐
-│ pg_size_pretty │
-├────────────────┤
-│ 1086 MB        │
-└────────────────┘
+SELECT pg_size_pretty(pg_total_relation_size('idx_applications_created_at'))
+as created_at_index_size;
 
-SELECT pg_size_pretty(pg_total_relation_size('idx_applications_doc_departments_gin_jsonb_ops'));
-┌────────────────┐
-│ pg_size_pretty │
-├────────────────┤
-│ 78 MB          │
-└────────────────┘
+┌───────────────────────┐
+│ created_at_index_size │
+├───────────────────────┤
+│ 50 MB                 │
+└───────────────────────┘
+
+SELECT pg_size_pretty(pg_total_relation_size('idx_applications_doc_gin_jsonb_ops'))
+as gin_json_index_size;
+
+┌─────────────────────┐
+│ gin_json_index_size │
+├─────────────────────┤
+│ 1492 MB             │
+└─────────────────────┘
+
+SELECT pg_size_pretty(pg_total_relation_size('idx_applications_doc_departments_gin_jsonb_ops'))
+as gin_json_deps_index_size;
+
+┌──────────────────────────┐
+│ gin_json_deps_index_size │
+├──────────────────────────┤
+│ 237 MB                   │
+└──────────────────────────┘
 
 
 
