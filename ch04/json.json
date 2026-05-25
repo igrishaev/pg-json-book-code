@@ -11,6 +11,23 @@
     "format": "date-time"
 }
 
+
+{
+    "type": "string",
+    "format": "date-time"
+}
+
+{
+  "type": "object",
+  "properties": {
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
+
+
 {"users": [{"name": "Ivan"},
            {"name": "Huan"}]}
 
