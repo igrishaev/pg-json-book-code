@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {"type": "string", "format": "uuid"},
+    "status": {"enum": ["active", "deleted", "pending"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "application_id": {"type": "integer"},
+    "organization": {...},
+    ...
+  },
+  "required": ["id", "status", "created_at", "..."]
+}
