@@ -113,3 +113,15 @@ where ((doc->>'application_id')::int) between 100 and 200;
 │ Planning Time: 0.290 ms                                                                                                             │
 │ Execution Time: 0.163 ms                                                                                                            │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+insert into applications (doc) values (
+  '{"application_id": "10001111", "created_at": "2026-12-05T15:33:55Z"}'
+) on conflict (
+    ((doc->>'application_id')::int),
+    (get_year(doc->'created_at'))
+)
+do nothing;
+
+-- full index expression
+-- do update set ...
