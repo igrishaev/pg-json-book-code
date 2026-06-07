@@ -125,3 +125,256 @@ do nothing;
 
 -- full index expression
 -- do update set ...
+
+create table organizations (
+    id uuid primary key default uuid_generate_v4(),
+    doc jsonb compression lz4 not null,
+    created_at timestamptz not null default current_timestamp,
+    updated_at timestamptz
+);
+
+
+select distinct doc #>> '{organization,id}' as org_id
+from applications
+limit 100;
+
+┌──────────────────────────────────────┐
+│                org_id                │
+├──────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000000000 │
+│ 00000000-0000-0000-0000-000000000001 │
+│ 00000000-0000-0000-0000-000000000002 │
+│ 00000000-0000-0000-0000-000000000003 │
+│ 00000000-0000-0000-0000-000000000004 │
+│ 00000000-0000-0000-0000-000000000005 │
+│ 00000000-0000-0000-0000-000000000006 │
+│ 00000000-0000-0000-0000-000000000007 │
+│ 00000000-0000-0000-0000-000000000008 │
+│ 00000000-0000-0000-0000-000000000009 │
+│ 00000000-0000-0000-0000-000000000010 │
+│ 00000000-0000-0000-0000-000000000011 │
+│ 00000000-0000-0000-0000-000000000012 │
+
+
+delete from applications
+where (doc #>> '{organization,id}') is null;
+-- DELETE 3
+
+select distinct on (doc #>> '{organization,id}')
+    (doc #>> '{organization,id}')::uuid as id,
+    jsonb_build_object(
+        'id',         (doc #>> '{organization,id}'),
+        'status',     'active',
+        'code',       (doc #>> '{organization,code}'),
+        'short_name', (doc #>> '{organization,short_name}')
+    ) as doc
+from
+    applications
+limit
+    100;
+
+┌──────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                  id                  │                                                        doc                                                        │
+├──────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000000000 │ {"id": "00000000-0000-0000-0000-000000000000", "code": "0", "status": "active", "short_name": "Organization 0"}   │
+│ 00000000-0000-0000-0000-000000000001 │ {"id": "00000000-0000-0000-0000-000000000001", "code": "1", "status": "active", "short_name": "Organization 1"}   │
+│ 00000000-0000-0000-0000-000000000002 │ {"id": "00000000-0000-0000-0000-000000000002", "code": "2", "status": "active", "short_name": "Organization 2"}   │
+│ 00000000-0000-0000-0000-000000000003 │ {"id": "00000000-0000-0000-0000-000000000003", "code": "3", "status": "active", "short_name": "Organization 3"}   │
+│ 00000000-0000-0000-0000-000000000004 │ {"id": "00000000-0000-0000-0000-000000000004", "code": "4", "status": "active", "short_name": "Organization 4"}   │
+│ 00000000-0000-0000-0000-000000000005 │ {"id": "00000000-0000-0000-0000-000000000005", "code": "5", "status": "active", "short_name": "Organization 5"}   │
+│ 00000000-0000-0000-0000-000000000006 │ {"id": "00000000-0000-0000-0000-000000000006", "code": "6", "status": "active", "short_name": "Organization 6"}   │
+│ 00000000-0000-0000-0000-000000000007 │ {"id": "00000000-0000-0000-0000-000000000007", "code": "7", "status": "active", "short_name": "Organization 7"}   │
+│ 00000000-0000-0000-0000-000000000008 │ {"id": "00000000-0000-0000-0000-000000000008", "code": "8", "status": "active", "short_name": "Organization 8"}   │
+│ 00000000-0000-0000-0000-000000000009 │ {"id": "00000000-0000-0000-0000-000000000009", "code": "9", "status": "active", "short_name": "Organization 9"}   │
+│ 00000000-0000-0000-0000-000000000010 │ {"id": "00000000-0000-0000-0000-000000000010", "code": "10", "status": "active", "short_name": "Organization 10"} │
+│ 00000000-0000-0000-0000-000000000011 │ {"id": "00000000-0000-0000-0000-000000000011", "code": "11", "status": "active", "short_name": "Organization 11"} │
+│ 00000000-0000-0000-0000-000000000012 │ {"id": "00000000-0000-0000-0000-000000000012", "code": "12", "status": "active", "short_name": "Organization 12"} │
+
+insert into organizations (id, doc)
+select distinct on (doc #>> '{organization,id}')
+    (doc #>> '{organization,id}')::uuid as id,
+    jsonb_build_object(
+        'id',         (doc #>> '{organization,id}'),
+        'status',     'active',
+        'code',       (doc #>> '{organization,code}'),
+        'short_name', (doc #>> '{organization,short_name}')
+    ) as doc
+from
+    applications;
+
+select count(*) from organizations;
+
+┌───────┐
+│ count │
+├───────┤
+│  1000 │
+└───────┘
+
+select
+    app.id as app_id,
+    org.doc->>'code' as org_code,
+    org.doc->>'short_name' as org_name
+from
+    applications app
+join
+    organizations org
+    on (app.doc #>> '{organization,id}')::uuid = org.id
+limit
+    100;
+
+┌──────────────────────────────────────┬──────────┬──────────────────┐
+│                app_id                │ org_code │     org_name     │
+├──────────────────────────────────────┼──────────┼──────────────────┤
+│ 00000000-0000-0000-0000-000000635585 │ 585      │ Organization 585 │
+│ 00000000-0000-0000-0000-000000635586 │ 586      │ Organization 586 │
+│ 00000000-0000-0000-0000-000000635587 │ 587      │ Organization 587 │
+│ 00000000-0000-0000-0000-000000635588 │ 588      │ Organization 588 │
+│ 00000000-0000-0000-0000-000000635589 │ 589      │ Organization 589 │
+│ 00000000-0000-0000-0000-000000635590 │ 590      │ Organization 590 │
+
+
+alter table applications add constraint fk_org_id
+foreign key ((doc #>> '{organization,id}')::uuid) references organizations(id);
+
+ERROR:  syntax error at or near "("
+LINE 2: foreign key ((doc #>> '{organization,id}')::uuid) references...
+
+
+alter table applications
+add column _org_id uuid generated always
+as ((doc #>> '{organization,id}')::uuid) stored;
+
+-- https://postgrespro.ru/docs/postgresql/18/ddl-generated-columns?lang=ru
+-- https://postgrespro.ru/docs/postgresql/17/ddl-generated-columns?lang=ru
+
+alter table applications add constraint fk_org_id
+foreign key (_org_id) references organizations(id);
+
+
+select id, _org_id from applications limit 10;
+
+┌──────────────────────────────────────┬──────────────────────────────────────┐
+│                  id                  │               _org_id                │
+├──────────────────────────────────────┼──────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000635649 │ 00000000-0000-0000-0000-000000000649 │
+│ 00000000-0000-0000-0000-000000635650 │ 00000000-0000-0000-0000-000000000650 │
+│ 00000000-0000-0000-0000-000000635651 │ 00000000-0000-0000-0000-000000000651 │
+│ 00000000-0000-0000-0000-000000635652 │ 00000000-0000-0000-0000-000000000652 │
+│ 00000000-0000-0000-0000-000000635653 │ 00000000-0000-0000-0000-000000000653 │
+
+
+insert into applications (doc) values ($$
+  {
+    "application_id": 1999111,
+    "organization": {
+      "id": "967849e5-9c59-4fa2-bc57-0a4a84bbd41c"
+    }
+  }
+$$::jsonb);
+
+-- ERROR:  insert or update on table "applications" violates foreign key constraint "fk_org_id"
+-- DETAIL:  Key (_org_id)=(967849e5-9c59-4fa2-bc57-0a4a84bbd41c) is not present in table "organizations".
+
+
+delete from organizations
+where id = '00000000-0000-0000-0000-000000000649';
+
+-- ERROR:  update or delete on table "organizations" violates foreign key constraint "fk_org_id" on table "applications"
+-- DETAIL:  Key (id)=(00000000-0000-0000-0000-000000000649) is still referenced from table "applications".
+
+alter table applications drop constraint fk_org_id;
+
+
+alter table applications add constraint fk_org_id
+foreign key (_org_id) references organizations(id)
+on delete cascade;
+
+
+delete from organizations
+where id = '00000000-0000-0000-0000-000000000649';
+
+select id from applications
+where (doc #>> '{organization,id}') = '00000000-0000-0000-0000-000000000649';
+-- (0 rows)
+
+alter table applications drop constraint fk_org_id;
+
+alter table applications add constraint fk_org_id
+foreign key (_org_id) references organizations(id)
+on delete set null;
+
+-- ERROR:  invalid ON DELETE action for foreign key constraint containing generated column
+
+
+create or replace function fn_applications_org_ref_null()
+returns trigger as $$
+begin
+    update applications
+    set doc['organization'] = null
+    where (doc #>> '{organization,id}')::uuid = OLD.id;
+    return OLD;
+end;
+$$ language plpgsql;
+
+
+create trigger trg_organizations_before_delete
+before delete on organizations
+for each row execute function fn_applications_org_ref_null();
+
+delete from organizations
+where id = '00000000-0000-0000-0000-000000000651';
+
+select id, _org_id, doc -> 'organization' as org
+from applications
+where id = '00000000-0000-0000-0000-000000635651';
+
+┌──────────────────────────────────────┬─────────┬──────┐
+│                  id                  │ _org_id │ org  │
+├──────────────────────────────────────┼─────────┼──────┤
+│ 00000000-0000-0000-0000-000000635651 │ <null>  │ null │
+└──────────────────────────────────────┴─────────┴──────┘
+
+
+create index if not exists idx_app_org_id_1
+on applications using btree
+(((doc #>> '{organization,id}')::uuid));
+
+create index if not exists idx_app_org_id_2
+on applications using btree (_org_id);
+
+analyze applications;
+
+
+explain (analyze)
+select id, doc from applications
+where (((doc #>> '{organization,id}')::uuid)) between
+'00000000-0000-0000-0000-000000000153' and '00000000-0000-0000-0000-000000000353';
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                                        QUERY PLAN                                                                                                         │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Bitmap Heap Scan on applications  (cost=2698.86..272948.89 rows=194969 width=1932) (actual time=31.504..228.308 rows=201000 loops=1)                                                                                      │
+│   Recheck Cond: ((((doc #>> '{organization,id}'::text[]))::uuid >= '00000000-0000-0000-0000-000000000153'::uuid) AND (((doc #>> '{organization,id}'::text[]))::uuid <= '00000000-0000-0000-0000-000000000353'::uuid))     │
+│   Heap Blocks: exact=50985                                                                                                                                                                                                │
+│   ->  Bitmap Index Scan on idx_app_org_id_1  (cost=0.00..2650.12 rows=194969 width=0) (actual time=22.102..22.102 rows=201000 loops=1)                                                                                    │
+│         Index Cond: ((((doc #>> '{organization,id}'::text[]))::uuid >= '00000000-0000-0000-0000-000000000153'::uuid) AND (((doc #>> '{organization,id}'::text[]))::uuid <= '00000000-0000-0000-0000-000000000353'::uuid)) │
+│ Planning Time: 0.378 ms                                                                                                                                                                                                   │
+│ Execution Time: 231.996 ms                                                                                                                                                                                                │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+explain (analyze)
+select id, doc from applications
+where _org_id between
+'00000000-0000-0000-0000-000000000153' and '00000000-0000-0000-0000-000000000353';
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                  QUERY PLAN                                                                   │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Bitmap Heap Scan on applications  (cost=2698.86..260778.65 rows=194969 width=1932) (actual time=30.887..213.769 rows=201000 loops=1)          │
+│   Recheck Cond: ((_org_id >= '00000000-0000-0000-0000-000000000153'::uuid) AND (_org_id <= '00000000-0000-0000-0000-000000000353'::uuid))     │
+│   Heap Blocks: exact=50985                                                                                                                    │
+│   ->  Bitmap Index Scan on idx_app_org_id_2  (cost=0.00..2650.12 rows=194969 width=0) (actual time=22.072..22.073 rows=201000 loops=1)        │
+│         Index Cond: ((_org_id >= '00000000-0000-0000-0000-000000000153'::uuid) AND (_org_id <= '00000000-0000-0000-0000-000000000353'::uuid)) │
+│ Planning Time: 0.764 ms                                                                                                                       │
+│ Execution Time: 218.374 ms                                                                                                                    │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
