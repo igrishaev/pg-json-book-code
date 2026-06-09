@@ -13,6 +13,8 @@ insert into applications (doc) values (
 -- DETAIL:  Failing row contains (b6edce9d-285f-4df0-9bba-5f65d390608a, {"test": "abc"}, 2026-06-05 17:49:33.757553+03, null).
 
 
+alter table applications
+drop constraint ctr_doc_application_id_nn;
 
 alter table applications add constraint ctr_doc_application_id_int
 check ((doc->>'application_id')::int is not null);
@@ -23,6 +25,13 @@ insert into applications (doc) values (
 
 -- ERROR: cannot cast jsonb string to type integer
 
+create table users_demo(
+    id integer primary key,
+    full_name text not null,
+    email text not null,
+    unique(email)
+);
+
 create table post_tags(
     post_id integer not null,
     tag_id integer not null,
@@ -30,15 +39,46 @@ create table post_tags(
     unique (post_id, tag_id)
 );
 
-insert into post_tags (post_id, tag_id)
-values (100, 10);
+drop table post_tags;
+
+create table post_tags(
+    post_id integer not null,
+    tag_id integer not null,
+    created_at timestamptz not null default current_timestamp
+);
+
+alter table post_tags
+add constraint ctx_post_id_tag_id_u
+unique (post_id, tag_id);
+
 
 insert into post_tags (post_id, tag_id)
 values (100, 10);
 
--- ERROR:  duplicate key value violates unique constraint "post_tags_post_id_tag_id_key"
+insert into post_tags (post_id, tag_id)
+values (100, 10);
+
+-- ERROR:  duplicate key value violates unique constraint "ctx_post_id_tag_id_u"
 -- DETAIL:  Key (post_id, tag_id)=(100, 10) already exists.
 
+
+alter table applications
+add constraint ctx_doc_application_id_u
+unique (((doc->>'application_id')::int));
+
+-- ERROR:  syntax error at or near "("
+-- LINE 3: unique (((doc->>'application_id')::int));
+
+alter table applications
+drop constraint ctr_doc_application_id_int;
+
+\d+ applications
+
+Indexes:
+    "applications_pkey" PRIMARY KEY, btree (id)
+    ...
+Check constraints:
+    "ctr_doc_application_id_int" CHECK (((doc ->> 'application_id'::text)::integer) IS NOT NULL)
 
 create unique index idx_doc_application_id_u
 on applications (((doc->>'application_id')::int));
@@ -47,6 +87,14 @@ on applications (((doc->>'application_id')::int));
 
 delete from applications
 where doc @@ '$.application_id.type() != "number" ';
+
+
+insert into applications (doc) values (
+  '{"application_id": "12345"}'
+);
+
+ERROR:  duplicate key value violates unique constraint "idx_doc_application_id_u"
+DETAIL:  Key (((doc ->> 'application_id'::text)::integer))=(12345) already exists.
 
 -- DELETE 1
 
@@ -66,6 +114,8 @@ nulls not distinct;
 insert into applications (doc) values (
   '{"test": "abc"}'
 );
+
+
 
 -- ERROR:  duplicate key value violates unique constraint "idx_doc_application_id_u"
 -- DETAIL:  Key (((doc->>'application_id'::text)::integer))=(null) already exists.
