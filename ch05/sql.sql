@@ -115,23 +115,29 @@ insert into applications (doc) values (
   '{"test": "abc"}'
 );
 
+-- OK
 
+insert into applications (doc) values (
+  '{"test": "abc"}'
+);
 
 -- ERROR:  duplicate key value violates unique constraint "idx_doc_application_id_u"
 -- DETAIL:  Key (((doc->>'application_id'::text)::integer))=(null) already exists.
 
-create or replace function get_year(ts_field jsonb)
-returns integer
+
+drop index idx_doc_application_id_u;
+
+create or replace function created_at_year(doc jsonb)
+returns timestamptz
 language sql immutable strict parallel safe
-return extract(year from ((ts_field->>0)::timestamp));
+return date_trunc('year', (doc->>'created_at')::timestamp);
+
 
 create unique index idx_doc_app_id_date_u
 on applications (
     ((doc->>'application_id')::int),
-    (get_year(doc->'created_at'))
+    (created_at_year(doc))
 );
-
-drop index idx_doc_application_id_u;
 
 insert into applications (doc) values (
   '{"application_id": "10001111", "created_at": "2026-06-05T15:33:55Z"}'
@@ -146,32 +152,18 @@ insert into applications (doc) values (
 );
 
 -- ERROR:  duplicate key value violates unique constraint "idx_doc_app_id_date_u"
--- DETAIL:  Key (((doc ->> 'application_id'::text)::integer), get_year(doc -> 'created_at'::text))=(10001111, 2026) already exists.
-
-explain analyze
-select id from applications
-where ((doc->>'application_id')::int) between 100 and 200;
-
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                             QUERY PLAN                                                              │
-├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Bitmap Heap Scan on applications  (cost=107.67..17971.46 rows=5000 width=16) (actual time=0.053..0.120 rows=101 loops=1)            │
-│   Recheck Cond: ((((doc ->> 'application_id'::text))::integer >= 100) AND (((doc ->> 'application_id'::text))::integer <= 200))     │
-│   Heap Blocks: exact=26                                                                                                             │
-│   ->  Bitmap Index Scan on idx_doc_app_id_date_u  (cost=0.00..106.42 rows=5000 width=0) (actual time=0.041..0.041 rows=101 loops=1) │
-│         Index Cond: ((((doc ->> 'application_id'::text))::integer >= 100) AND (((doc ->> 'application_id'::text))::integer <= 200)) │
-│ Planning Time: 0.290 ms                                                                                                             │
-│ Execution Time: 0.163 ms                                                                                                            │
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+-- DETAIL:  Key (((doc ->> 'application_id'::text)::integer), get_year(doc))=(10001111, 2026-01-01 00:00:00+03) already exists.
 
 
 insert into applications (doc) values (
   '{"application_id": "10001111", "created_at": "2026-12-05T15:33:55Z"}'
 ) on conflict (
     ((doc->>'application_id')::int),
-    (get_year(doc->'created_at'))
+    (created_at_year(doc))
 )
 do nothing;
+
+-- INSERT 0 0
 
 -- full index expression
 -- do update set ...
