@@ -1,0 +1,98 @@
+{
+  "id": "00000000-0000-0000-0000-000000001055",
+  "status": "approved",
+  "amounts": [
+    {
+      "amount": 82319661,
+      "period": {
+        "d": 1,
+        "m": 5,
+        "w": 9,
+        "y": 4
+      },
+      "currency": "EUR"
+    },
+    {
+      "amount": 95199147,
+      "period": {
+        "d": 1,
+        "m": 1,
+        "w": 1,
+        "y": 7
+      },
+      "currency": "USD"
+    }
+  ],
+  "comment": "Comment number #1055",
+  "journal": [
+    {
+      "event": "deleted",
+      "user_id": "2961665c-d8fd-4a92-9047-e543cfe8cefb",
+      "datetime": "2026-05-15T14:28:49.940115+03:00"
+    },
+    {
+      "event": "active",
+      "user_id": "79305b0f-d57c-43be-b53b-7bfc417b4ded",
+      "datetime": "2025-07-13T05:20:52.037595+03:00"
+    },
+    {
+      "event": "approved",
+      "user_id": "aad6d48d-57cd-463e-8e5d-8518e535352d",
+      "datetime": "2026-01-27T08:25:31.65461+03:00"
+    }
+  ],
+  "created_at": "2026-01-06T17:12:12.34579+03:00",
+  "created_by": {
+    "id": "00000000-0000-0000-0000-000000000055",
+    "name": "User 0055",
+    "email": "user_0055@test.com"
+  },
+  "assigned_to": "user_55@test.com",
+  "credit_type": "org",
+  "departments": [
+    {
+      "id": "00000000-0000-0000-0000-000000000005",
+      "code": "dep_5",
+      "name": "Department 5",
+      "users": [
+        {
+          "id": "00000000-0000-0000-0000-000000000055",
+          "name": "User 55",
+          "role": "support",
+          "email": "user_55@test.com"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000065",
+          "name": "User 65",
+          "role": "decision-maker",
+          "email": "user_65@test.com"
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000015",
+      "code": "dep_15",
+      "name": "Department 15",
+      "users": [
+        {
+          "id": "00000000-0000-0000-0000-000000000075",
+          "name": "User 75",
+          "role": "support",
+          "email": "user_75@test.com"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000035",
+          "name": "User 35",
+          "role": "decision-maker",
+          "email": "user_35@test.com"
+        }
+      ]
+    }
+  ],
+  "organization": {
+    "id": "00000000-0000-0000-0000-000000000055",
+    "code": 55,
+    "short_name": "Organization 55"
+  },
+  "application_id": 1055
+}
