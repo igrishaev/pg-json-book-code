@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<users>
+  <user id="101" age="33">Ivan Petrov</user>
+  <user id="135" age="52">Andrey Ivanov</user>
+  <user id="399" age="41">Anna Smirnova</user>
+</users>
+
+
+/users/user[1]/text()
+
+Ivan Petrov

@@ -1,0 +1,98 @@
+{
+  "id": "00000000-0000-0000-0000-000000000065",
+  "status": "approved",
+  "amounts": [
+    {
+      "amount": 42278084,
+      "period": {
+        "d": 6,
+        "m": 1,
+        "w": 10,
+        "y": 8
+      },
+      "currency": "RUB"
+    },
+    {
+      "amount": 92662590,
+      "period": {
+        "d": 3,
+        "m": 2,
+        "w": 10,
+        "y": 8
+      },
+      "currency": "EUR"
+    }
+  ],
+  "comment": "Comment number #65",
+  "journal": [
+    {
+      "event": "active",
+      "user_id": "6d4fd d3a-0cea-4927-80e4-39e06fcdc2ae",
+      "datetime": "2026-01-17T00:35:25.83857+03:00"
+    },
+    {
+      "event": "active",
+      "user_id": "dad06c41-2286-47f0-8cea-62ab70608c12",
+      "datetime": "202 5-09-06T12:10:26.6973+03:00"
+    },
+    {
+      "event": "pending",
+      "user_id": "9f6c794e-13ae-4dcf-b946-ba984823b515",
+      "datetime": "2025-08-12T02:46:28.821215+03:00"
+    }
+  ],
+  "created_at": "2025-12-03T18:11:10.132775+03:00",
+  "created_by": {
+    "id": "00000000-0000-0000-0000-000000000065",
+    "name": "User 0065",
+    "email": "user_0065@test.com"
+  },
+  "assigned_to": "user_65@test.com",
+  "credit_type": "country",
+  "departments": [
+    {
+      "id": "00000000-0000-0000-0000-000000000015",
+      "code": "dep_15",
+      "name": "Department 15",
+      "users": [
+        {
+          "id": "00000000-0000-0000-0000-000000000065",
+          "name": "User 65",
+          "role": "manager",
+          "email": "user_65@test.com"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000075",
+          "name": "User 75",
+          "role": "reader",
+          "email": "user_75@test.com"
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000025",
+      "code": "dep_25",
+      "name": "Department 25",
+      "users": [
+        {
+          "id": "00000000-0000-0000-0000-000000000085",
+          "name": "User 85",
+          "role": "lead",
+          "email": "user_85@test.com"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000045",
+          "name": "User 45",
+          "role": "reader",
+          "email": "user_45@test.com"
+        }
+      ]
+    }
+  ],
+  "organization": {
+    "id": "00000000-0000-0000-0000-000000000065",
+    "code": 65,
+    "short_name": "Organization 65"
+  },
+  "application_id": 65
+}

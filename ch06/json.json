@@ -1,0 +1,34 @@
+{
+  "users": [
+    {
+      "id": 101,
+      "age": 33,
+      "name": "Ivan Petrov"
+    },
+    {
+      "id": 135,
+      "age": 52,
+      "name": "Andrey Ivanov"
+    },
+    {
+      "id": 399,
+      "age": 41,
+      "name": "Anna Smirnova"
+    }
+  ]
+}
+
+$.users[0].name
+
+
+users.0.id   101
+users.0.age  33
+users.0.name Ivan Petrov
+
+users.1.id   135
+users.1.age  41
+users.1.name Andrey Ivanov
+
+users.2.id   399
+users.2.age  41
+users.2.name Anna Smirnova
