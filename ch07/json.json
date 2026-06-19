@@ -81,3 +81,72 @@
     "datetime": "2025-08-12T02:46:28.821215+03:00"
   }
 ]
+
+{
+   "id":"101",
+   "title":"Product A",
+   "children":[
+      {
+         "id":"104",
+         "title":"Product B"
+      },
+      {
+         "id":"206",
+         "title":"Product C",
+         "children":[
+            {
+               "id":304,
+               "title":"Product D"
+            }{
+               "id":323,
+               "title":"Product E"
+            }
+         ]
+      }
+   ]
+}
+
+{
+   "id":"101",
+   "title":"Product A",
+   "children":[
+      {
+         "id":"104",
+         "title":"Product B"
+      },
+      {
+         "id":"206",
+         "title":"Product C",
+         "children":[
+            {
+               "id":304,
+               "title":"Product D"
+            },
+            {
+               "id":323,
+               "title":"Product E"
+            }
+         ]
+      }
+   ]
+}
+
+
+
+"journal": [
+  {
+    "event": "active",
+    "user_id": "6d4fd d3a-0cea-4927-80e4-39e06fcdc2ae",
+    "datetime": "2026-01-17T00:35:25.83857+03:00"
+  },
+  {
+    "event": "active",
+    "user_id": "dad06c41-2286-47f0-8cea-62ab70608c12",
+    "datetime": "202 5-09-06T12:10:26.6973+03:00"
+  },
+  {
+    "event": "pending",
+    "user_id": "9f6c794e-13ae-4dcf-b946-ba984823b515",
+    "datetime": "2025-08-12T02:46:28.821215+03:00"
+  }
+],

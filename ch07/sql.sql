@@ -526,3 +526,362 @@ group by currency;
 │ RUB      │ 1649511396849 │     33006 │
 │ USD      │ 1678496810973 │     33427 │
 └──────────┴───────────────┴───────────┘
+
+
+with
+recursive init as (
+    select
+        doc->>'id' as id,
+        doc->>'title' as title,
+        0 as level,
+        doc->'children' as children
+    from
+        (values ($$
+{
+   "id":"101",
+   "title":"Product A",
+   "children":[
+      {
+         "id":"104",
+         "title":"Product B"
+      },
+      {
+         "id":"206",
+         "title":"Product C",
+         "children":[
+            {
+               "id":304,
+               "title":"Product D"
+            },
+            {
+               "id":323,
+               "title":"Product E"
+            }
+         ]
+      }
+   ]
+}
+    $$::jsonb)) as _(doc)
+    union all
+    select
+        doc->>'id' as id,
+        doc->>'title' as title,
+        level + 1 as level,
+        doc->'children' as children
+    from
+        init,
+        jsonb_array_elements(children) as _(doc)
+)
+select id, level, title
+from init;
+
+┌─────┬───────┬───────────┐
+│ id  │ level │   title   │
+├─────┼───────┼───────────┤
+│ 101 │     0 │ Product A │
+│ 104 │     1 │ Product B │
+│ 206 │     1 │ Product C │
+│ 304 │     2 │ Product D │
+│ 323 │     2 │ Product E │
+└─────┴───────┴───────────┘
+
+
+doc #>> '{organization,short_name}'
+
+
+create or replace function get_application_id(doc jsonb)
+returns int8
+language sql immutable strict parallel safe
+return (doc->>'application_id')::int8;
+
+
+select get_application_id(doc) as app_id
+from applications limit 10;
+
+┌────────┐
+│ app_id │
+├────────┤
+│ 152641 │
+│ 152642 │
+│ 152643 │
+│ 152644 │
+│ 152645 │
+│ 152646 │
+│ 152647 │
+│ 152648 │
+│ 152649 │
+│ 152650 │
+└────────┘
+
+create schema app;
+
+create or replace function app.application_id(doc jsonb)
+returns int8
+language sql immutable strict parallel safe
+return (doc->>'application_id')::int8;
+
+
+set search_path to app,public,"$user";
+
+
+select application_id(doc) as app_id
+from applications limit 10;
+
+
+create or replace function app_user_names(doc jsonb)
+returns text
+language sql immutable strict parallel safe as $$
+select
+    string_agg(distinct usr->>'name', ', ')
+from
+    jsonb_array_elements(doc['departments']) as deps(dep),
+    jsonb_array_elements(dep['users']) as users(usr)
+$$;
+
+
+select app_user_names(doc) as users
+from applications limit 10;
+
+┌───────────────────────────────────────┐
+│                 users                 │
+├───────────────────────────────────────┤
+│ User 46, User 641, User 651, User 661 │
+│ User 47, User 642, User 652, User 662 │
+│ User 48, User 643, User 653, User 663 │
+│ User 49, User 644, User 654, User 664 │
+│ User 50, User 645, User 655, User 665 │
+│ User 51, User 646, User 656, User 666 │
+│ User 52, User 647, User 657, User 667 │
+│ User 53, User 648, User 658, User 668 │
+│ User 54, User 649, User 659, User 669 │
+│ User 30, User 650, User 660, User 670 │
+└───────────────────────────────────────┘
+
+
+create or replace function app_user_names(doc jsonb)
+returns text
+language sql immutable strict parallel safe as $$
+select
+    string_agg(distinct usr->>'name', ', ' order by usr->>'name')
+from
+    jsonb_array_elements(doc['departments']) as deps(dep),
+    jsonb_array_elements(dep['users']) as users(usr)
+$$;
+
+
+create or replace function app_last_event_user_id(doc jsonb)
+returns uuid
+language sql immutable strict parallel safe as $$
+select
+    jt.user_id
+from
+    json_table(doc, '$.journal[*]' columns(
+        user_id  uuid        path '$.user_id',
+        datetime timestamptz path '$.datetime'
+    )) as jt
+order by datetime desc
+limit 1
+$$;
+
+
+select app_last_event_user_id(doc) as user_id
+from applications limit 10;
+
+
+┌──────────────────────────────────────┐
+│               user_id                │
+├──────────────────────────────────────┤
+│ b8c697ff-a344-446a-a433-605d10a4534a │
+│ 8f3c805c-5826-4011-80e2-84602f6fc833 │
+│ 6ae37c29-6408-4cd9-9b11-ac1c1bf7fb5a │
+│ e8d60a6b-6f75-447b-b5e4-a410fe8ba9aa │
+│ 8717b98e-500b-4d06-b7c3-ab686f9b3de8 │
+│ be186c17-9f4d-4128-8778-258e3693fa17 │
+│ f1e644c9-be03-407e-8bde-8255a1902302 │
+│ e0e30b25-5671-4f59-931f-1634f4dcf23d │
+│ 424c4b20-3e1f-4d50-9a81-8ea3abc78f23 │
+│ e4f261c3-979b-496b-9d25-8e48ea363b6d │
+└──────────────────────────────────────┘
+
+
+create or replace function app_last_event_user_id(doc jsonb, event text)
+returns uuid
+language sql immutable strict parallel safe as $$
+select
+    jt.user_id
+from
+    json_table(doc, '$.journal[*]' columns(
+        user_id  uuid        path '$.user_id',
+        event    text        path '$.event',
+        datetime timestamptz path '$.datetime'
+    )) as jt
+where jt.event = event
+order by datetime desc
+limit 1
+$$;
+
+
+select app_last_event_user_id(doc, 'active') as user_id
+from applications limit 10;
+
+
+
+
+create or replace function app_created_by_roles(doc jsonb)
+returns setof text
+language sql immutable strict parallel safe as $$
+select
+    user_role
+from
+    json_table(doc, '$.departments.users[*]' columns(
+        user_id   uuid path '$.id',
+        user_role text path '$.role'
+    )) as jt
+where user_id = (doc #>> '{created_by,id}')::uuid
+$$;
+
+
+select id, app_created_by_roles(doc)
+from applications limit 10;
+
+
+┌──────────────────────────────────────┬──────────────────────┐
+│                  id                  │ app_created_by_roles │
+├──────────────────────────────────────┼──────────────────────┤
+│ 00000000-0000-0000-0000-000000152641 │ decision-maker       │
+│ 00000000-0000-0000-0000-000000152642 │ analyst              │
+│ 00000000-0000-0000-0000-000000152643 │ analyst              │
+│ 00000000-0000-0000-0000-000000152644 │ reader               │
+│ 00000000-0000-0000-0000-000000152645 │ decision-maker       │
+│ 00000000-0000-0000-0000-000000152646 │ manager              │
+│ 00000000-0000-0000-0000-000000152647 │ decision-maker       │
+│ 00000000-0000-0000-0000-000000152648 │ reader               │
+│ 00000000-0000-0000-0000-000000152649 │ reader               │
+│ 00000000-0000-0000-0000-000000152650 │ decision-maker       │
+└──────────────────────────────────────┴──────────────────────┘
+
+
+
+create or replace function app_dep_user_table(doc jsonb)
+returns table (
+    app_id int8,
+    dep_code text,
+    dep_name text,
+    user_email text,
+    user_role text
+)
+language sql immutable strict parallel safe as $$
+select
+    jt.*
+from
+    json_table(doc, '$' columns(
+        app_id int8 path '$.application_id',
+        nested path '$.departments[*]' columns(
+            dep_code text path '$.code',
+            dep_name text path '$.name',
+            nested path '$.users[*]' columns(
+                user_email text path '$.email',
+                user_role  text path '$.role'
+            )
+        )
+    )) as jt
+$$;
+
+
+select
+    tab.*
+from
+    applications,
+    app_dep_user_table(doc) as tab
+where
+    id = '00000000-0000-0000-0000-000000000001';
+
+
+┌────────┬──────────┬───────────────┬──────────────────┬───────────┐
+│ app_id │ dep_code │   dep_name    │    user_email    │ user_role │
+├────────┼──────────┼───────────────┼──────────────────┼───────────┤
+│      1 │ dep_1    │ Department 1  │ user_1@test.com  │ analyst   │
+│      1 │ dep_1    │ Department 1  │ user_11@test.com │ manager   │
+│      1 │ dep_11   │ Department 11 │ user_21@test.com │ principal │
+│      1 │ dep_11   │ Department 11 │ user_31@test.com │ reader    │
+└────────┴──────────┴───────────────┴──────────────────┴───────────┘
+
+
+create or replace function app_add_event(doc jsonb, user_id uuid, event text)
+returns jsonb
+language plpgsql immutable strict parallel safe as $$
+declare
+    journal jsonb;
+begin
+    journal := coalesce(doc['journal'], '[]'::jsonb);
+    journal := journal || jsonb_build_object(
+        'event', event,
+        'user_id', user_id::text,
+        'datetime', now()::text
+    );
+    return doc || jsonb_build_object('journal', journal);
+end;
+$$;
+
+
+select app_add_event($${
+    "journal": []
+}$$::jsonb, '6d4fdd3a-0cea-4927-80e4-39e06fcdc2ae'::uuid, 'created')
+as doc_new;
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                               doc_new                                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ {"journal": [{"event": "created", "user_id": "6d4fdd3a-0cea-4927-80e4-39e06fcdc2ae", "datetime": "2026-06-19 16:59:09.859938+03"}]} │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+create or replace function func_b(x int4) returns int4
+language plpgsql as $$
+begin
+    return x * x;
+end;
+$$;
+
+create or replace function func_a(x int4) returns int4
+language plpgsql as $$
+begin
+    return func_b(x);
+end;
+$$;
+
+select func_a(8);
+
+┌────────┐
+│ func_a │
+├────────┤
+│     64 │
+└────────┘
+
+drop function func_b;
+
+
+ERROR:  function func_b(integer) does not exist
+LINE 1: func_b(x)
+        ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  func_b(x)
+CONTEXT:  PL/pgSQL function func_a(integer) line 3 at RETURN
+
+
+drop function func_a;
+
+
+create or replace function func_b(x int4) returns int4
+language sql return x * x;
+
+create or replace function func_a(x int4) returns int4
+language sql return func_b(x);
+
+select func_a(8);
+
+drop function func_b;
+
+ERROR:  cannot drop function func_b(integer) because other objects depend on it
+DETAIL:  function func_a(integer) depends on function func_b(integer)
+HINT:  Use DROP ... CASCADE to drop the dependent objects too.
