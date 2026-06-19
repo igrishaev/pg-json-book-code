@@ -1,0 +1,83 @@
+"departments": [
+  {
+    "id": "00000000-0000-0000-0000-000000000005",
+    "code": "dep_5",
+    "name": "Department 5",
+    "users": [
+      {
+        "id": "00000000-0000-0000-0000-000000000055",
+        "name": "User 55",
+        "role": "support",
+        "email": "user_55@test.com"
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000065",
+        "name": "User 65",
+        "role": "decision-maker",
+        "email": "user_65@test.com"
+      }
+    ]
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000015",
+    "code": "dep_15",
+    "name": "Department 15",
+    "users": [
+      {
+        "id": "00000000-0000-0000-0000-000000000075",
+        "name": "User 75",
+        "role": "support",
+        "email": "user_75@test.com"
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000035",
+        "name": "User 35",
+        "role": "decision-maker",
+        "email": "user_35@test.com"
+      }
+    ]
+  }
+]
+
+
+"amounts": [
+  {
+    "amount": 42278084,
+    "period": {
+      "d": 6,
+      "m": 1,
+      "w": 10,
+      "y": 8
+    },
+    "currency": "RUB"
+  },
+  {
+    "amount": 92662590,
+    "period": {
+      "d": 3,
+      "m": 2,
+      "w": 10,
+      "y": 8
+    },
+    "currency": "EUR"
+  }
+]
+
+
+"journal": [
+  {
+    "event": "active",
+    "user_id": "6d4fd d3a-0cea-4927-80e4-39e06fcdc2ae",
+    "datetime": "2026-01-17T00:35:25.83857+03:00"
+  },
+  {
+    "event": "active",
+    "user_id": "dad06c41-2286-47f0-8cea-62ab70608c12",
+    "datetime": "202 5-09-06T12:10:26.6973+03:00"
+  },
+  {
+    "event": "pending",
+    "user_id": "9f6c794e-13ae-4dcf-b946-ba984823b515",
+    "datetime": "2025-08-12T02:46:28.821215+03:00"
+  }
+]
