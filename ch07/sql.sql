@@ -885,3 +885,336 @@ drop function func_b;
 ERROR:  cannot drop function func_b(integer) because other objects depend on it
 DETAIL:  function func_a(integer) depends on function func_b(integer)
 HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+
+
+
+create or replace function jsonb_string_agg(sep text, items jsonb)
+returns text
+language sql immutable strict parallel safe as $$
+select string_agg(distinct item, sep)
+from jsonb_array_elements_text(items) as sub(item);
+$$;
+
+comment on function jsonb_string_agg is $$
+
+    Given a separating string and a jsonb array of items,
+    concatenate them using the separator. All items are
+    coerced to text. Duplicates are removed, NULL items
+    are skipped. Usage:
+
+    jsonb_string_agg('|', '[1, null, true, "test"]')
+    -- 1|test|true
+
+$$;
+
+
+\df+ jsonb_string_agg;
+
+┌─[ RECORD 1 ]────────┬───────────────────────────────────────────────────────────┐
+│ Schema              │ public                                                    │
+│ Name                │ jsonb_string_agg                                          │
+│ Result data type    │ text                                                      │
+│ Argument data types │ sep text, items jsonb                                     │
+│ Type                │ func                                                      │
+│ Volatility          │ immutable                                                 │
+│ Parallel            │ safe                                                      │
+│ Owner               │ ivan                                                      │
+│ Security            │ invoker                                                   │
+│ Access privileges   │ <null>                                                    │
+│ Language            │ sql                                                       │
+│ Internal name       │ <null>                                                    │
+│ Description         │                                                          ↵│
+│                     │                                                          ↵│
+│                     │     Given a separating string and a jsonb array of items,↵│
+│                     │     concatenate them using the separator. All items are  ↵│
+│                     │     coerced to text. Duplicates are removed, NULL items  ↵│
+│                     │     are skipped. Usage:                                  ↵│
+│                     │                                                          ↵│
+│                     │     jsonb_string_agg('|', '[1, null, true, "test"]')     ↵│
+│                     │     -- 1|test|true                                       ↵│
+│                     │                                                          ↵│
+│                     │                                                           │
+└─────────────────────┴───────────────────────────────────────────────────────────┘
+
+
+V001__Add_Application_Functions.sql
+
+V002__Refactor_Application_Functions.sql
+
+
+create or replace function jsonb_string_agg(sep text, items jsonb)
+returns text
+language sql immutable strict parallel safe as $$
+/* new logic goes here */
+$$;
+
+comment on function jsonb_string_agg is $$
+/* new comment goes here */
+$$;
+
+
+./flyway -configFiles=/path/to/config.conf migrate
+
+
+create or replace function pg_temp.some_calc(x int, y int)
+returns int
+language sql immutable strict parallel safe
+return x + y;
+
+select pg_temp.some_calc(3, 4) as num;
+-- 7
+
+
+do $functions$ begin
+
+  create or replace function pg_temp.func_a()
+  returns int
+  language sql as $$
+  select 1;
+  $$;
+
+  create or replace function pg_temp.func_b()
+  returns int
+  language sql as $$
+  select 2;
+  $$;
+
+end;
+
+$functions$;
+
+
+copy applications (id, doc, created_at) to '/Users/ivan/work/pg-json-book-code/applications.csv' with (format csv, header on);
+-- 2GB
+
+
+copy (
+
+  select
+      doc->>'application_id' as app_id,
+      doc->>'status' as status,
+      doc->>'credit_type' as credit_type,
+      (doc->>'created_at')::date as created_at,
+      doc #>> '{created_by,name}' as created_by,
+      doc #>> '{organization,short_name}' as org_short_name
+  from
+      applications
+  where
+      doc->>'status' in ('active', 'pending')
+      and (doc->>'created_at')::timestamptz > now() - interval '3 months'
+  order by
+      (doc->>'created_at')::timestamptz
+
+) to '/Users/ivan/work/pg-json-book-code/report.csv' with (format csv, header on);
+
+
+copy (
+
+  select
+      doc->>'application_id' as app_id,
+      doc->>'status' as status,
+      doc->>'credit_type' as credit_type,
+      (doc->>'created_at')::date as created_at,
+      doc #>> '{created_by,name}' as created_by,
+      doc #>> '{organization,short_name}' as org_short_name
+  from
+      applications
+  where
+      doc->>'status' in ('active', 'pending')
+      and (doc->>'created_at')::timestamptz > now() - interval '3 months'
+  order by
+      (doc->>'created_at')::timestamptz
+
+) to program 'gzip > /Users/ivan/work/pg-json-book-code/report.csv.gzip' with (format csv, header on);
+
+
+-- COPY 8755
+
+
+create or replace view v_active_apps_3_months as
+select
+    doc->>'application_id' as app_id,
+    doc->>'status' as status,
+    doc->>'credit_type' as credit_type,
+    (doc->>'created_at')::date as created_at,
+    doc #>> '{created_by,name}' as created_by,
+    doc #>> '{organization,short_name}' as org_short_name
+from
+    applications
+where
+    doc->>'status' in ('active', 'pending')
+    and (doc->>'created_at')::timestamptz > now() - interval '3 months';
+
+
+select * from v_active_apps_3_months limit 100;
+
+┌────────┬────────┬─────────────┬────────────┬────────────┬──────────────────┐
+│ app_id │ status │ credit_type │ created_at │ created_by │  org_short_name  │
+├────────┼────────┼─────────────┼────────────┼────────────┼──────────────────┤
+│ 19001  │ active │ country     │ 2026-04-06 │ User 0001  │ Organization 1   │
+│ 207001 │ active │ country     │ 2026-05-11 │ User 0001  │ Organization 1   │
+│ 305001 │ active │ country     │ 2026-04-11 │ User 0001  │ Organization 1   │
+│ 627001 │ active │ country     │ 2026-04-09 │ User 0001  │ Organization 1   │
+│ 298010 │ active │ country     │ 2026-03-29 │ User 0010  │ Organization 10  │
+│ 912010 │ active │ country     │ 2026-03-30 │ User 0010  │ Organization 10  │
+│ 419100 │ active │ country     │ 2026-03-24 │ User 0100  │ Organization 100 │
+│ 472100 │ active │ country     │ 2026-04-30 │ User 0100  │ Organization 100 │
+
+
+
+create materialized view if not exists mv_active_apps_3_months as
+select
+    (doc->>'application_id')::int8 as app_id,
+    doc->>'status' as status,
+    doc->>'credit_type' as credit_type,
+    (doc->>'created_at')::date as created_at,
+    doc #>> '{created_by,name}' as created_by,
+    doc #>> '{organization,short_name}' as org_short_name
+from
+    applications
+where
+    doc->>'status' in ('active', 'pending')
+    and (doc->>'created_at')::timestamptz > now() - interval '3 months';
+
+
+refresh materialized view mv_active_apps_3_months;
+
+
+create unique index if not exists idx_mv_active_apps_3_months_app_id
+on mv_active_apps_3_months (app_id);
+
+explain analyze
+select * from mv_active_apps_3_months
+where app_id = 472100;
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                         QUERY PLAN                                                                          │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index Scan using idx_mv_active_apps_3_months_app_id on mv_active_apps_3_months  (cost=0.29..8.30 rows=1 width=49) (actual time=0.057..0.058 rows=1 loops=1) │
+│   Index Cond: (app_id = 472100)                                                                                                                             │
+│ Planning Time: 0.516 ms                                                                                                                                     │
+│ Execution Time: 0.081 ms                                                                                                                                    │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+refresh materialized view concurrently mv_active_apps_3_months;
+
+
+create extension pg_cron;
+
+
+SELECT cron.schedule(
+  'my-daily-report', '30 6 * * 1-5', $$
+
+copy (
+
+  select
+      doc->>'application_id' as app_id,
+      doc->>'status' as status,
+      doc->>'credit_type' as credit_type,
+      (doc->>'created_at')::date as created_at,
+      doc #>> '{created_by,name}' as created_by,
+      doc #>> '{organization,short_name}' as org_short_name
+  from
+      applications
+  where
+      doc->>'status' in ('active', 'pending')
+      and (doc->>'created_at')::timestamptz > now() - interval '3 months'
+  order by
+      (doc->>'created_at')::timestamptz
+
+) to program 'gzip > /path/to/report.csv.gzip' with (format csv, header on);
+
+$$
+);
+
+
+cron.job
+cron.job_run_details
+
+
+select * from cron.job_run_details order by start_time desc limit 5;
+┌───────┬───────┬─────────┬──────────┬──────────┬───────────────────┬───────────┬──────────────────┬───────────────────────────────┬───────────────────────────────┐
+│ jobid │ runid │ job_pid │ database │ username │      command      │  status   │  return_message  │          start_time           │           end_time            │
+├───────┼───────┼─────────┼──────────┼──────────┼───────────────────┼───────────┼──────────────────┼───────────────────────────────┼───────────────────────────────┤
+│    11 │  4328 │    2610 │ postgres │ marco    │ select pg_sleep(3)│ running   │ NULL             │ 2023-02-07 09:30:00.098164+01 │ NULL                          │
+│    10 │  4327 │    2609 │ postgres │ marco    │ select process()  │ succeeded │ SELECT 1         │ 2023-02-07 09:29:00.015168+01 │ 2023-02-07 09:29:00.832308+01 │
+│    10 │  4321 │    2603 │ postgres │ marco    │ select process()  │ succeeded │ SELECT 1         │ 2023-02-07 09:28:00.011965+01 │ 2023-02-07 09:28:01.420901+01 │
+│    10 │  4320 │    2602 │ postgres │ marco    │ select process()  │ failed    │ server restarted │ 2023-02-07 09:27:00.011833+01 │ 2023-02-07 09:27:00.72121+01  │
+│     9 │  4320 │    2602 │ postgres │ marco    │ select do_stuff() │ failed    │ job canceled     │ 2023-02-07 09:26:00.011833+01 │ 2023-02-07 09:26:00.22121+01  │
+└───────┴───────┴─────────┴──────────┴──────────┴───────────────────┴───────────┴──────────────────┴───────────────────────────────┴───────────────────────────────┘
+(10 rows)
+
+
+select * from cron.job_run_details where jobid = 123 order by start_time desc limit 5;
+
+
+status = 'failed'
+
+
+cron.unschedule('my-daily-report')
+cron.unschedule(123)
+
+
+create or replace view v_my_daily_report as
+select ...;
+
+
+SELECT cron.schedule(
+  'my-daily-report',
+  '30 6 * * 1-5',
+  $$
+    copy (select * from v_my_daily_report)
+    to program 'gzip > /path/to/report.csv.gzip'
+    with (format csv, header on)
+  $$
+);
+
+
+create or replace procedure dump_daily_report(datetime timestamptz)
+language plpgsql
+AS $$
+begin
+    copy (...) to ...
+end;
+$$;
+
+call dump_daily_report(now());
+
+
+
+SELECT cron.schedule(
+  'truncate-historical-records',
+  '15 2 * * 1-5',
+  $$
+    delete from history_table where created_at < now() - interval '3 months';
+  $$
+);
+
+
+create extension pg_prewarm;
+
+\d+ applications
+
+┌────────────┬──────────────────────────┬───────────┬──────────┬────────────────────┬──────────┬─────────────┬──────────────┬─────────────┐
+│   Column   │           Type           │ Collation │ Nullable │      Default       │ Storage  │ Compression │ Stats target │ Description │
+├────────────┼──────────────────────────┼───────────┼──────────┼────────────────────┼──────────┼─────────────┼──────────────┼─────────────┤
+│ id         │ uuid                     │           │ not null │ uuid_generate_v4() │ plain    │             │              │             │
+│ doc        │ jsonb                    │           │ not null │                    │ extended │ lz4         │              │             │
+│ created_at │ timestamp with time zone │           │ not null │ CURRENT_TIMESTAMP  │ plain    │             │              │             │
+│ updated_at │ timestamp with time zone │           │          │                    │ plain    │             │              │             │
+└────────────┴──────────────────────────┴───────────┴──────────┴────────────────────┴──────────┴─────────────┴──────────────┴─────────────┘
+Indexes:
+    "applications_pkey" PRIMARY KEY, btree (id)
+    "foo" btree ((doc ->> 'status'::text), (doc ->> 'credit_type'::text), (doc ->> 'assigned_to'::text))
+    "idx_applications_active_org_assigned_to" btree ((doc ->> 'assigned_to'::text)) WHERE (doc ->> 'status'::text) = 'active'::text AND (doc ->> 'credit_type'::text) = 'org'::text
+    "idx_applications_doc_departments_gin_jsonb_path_ops" gin ((doc['departments'::text]) jsonb_path_ops)
+    "idx_applications_doc_gin_jsonb_path_ops" gin (doc jsonb_path_ops)
+Access method: heap
+
+select pg_prewarm('idx_applications_doc_gin_jsonb_path_ops') as pages;
+
+┌───────┐
+│ pages │
+├───────┤
+│ 75818 │
+└───────┘
