@@ -379,7 +379,7 @@ from history where pk = '00000000-0000-0000-0000-000000100321';
 
 
 
-------------- TODO
+------------- ///////////
 
 
 prepare update_application_throttled as
@@ -387,8 +387,9 @@ with
 upsert as (
     insert into applications(id, doc)
     values ($1::uuid, $2::jsonb)
-    on conflict (id) do update
-    set doc = excluded.DOC
+    on conflict (id) do update set
+    doc = excluded.DOC,
+    updated_at = now()
     returning NEW.id, OLD.doc as doc_old, NEW.doc as doc_new
 )
 insert into history(pk, entity, operation, doc, created_at)
@@ -407,13 +408,48 @@ where
 
 
 execute update_application_throttled(
-    '00000000-0000-0000-0000-000000101321'::uuid,
+    '00000000-0000-0000-0000-000010123123'::uuid,
     $$
 {
-    "foo": "bar"
+    "foo": "1"
 }
     $$::jsonb
 );
 
 
-select count(*) from history where pk = '00000000-0000-0000-0000-000000100333';
+select count(*) from applications where id = '00000000-0000-0000-0000-000010123123';
+-- 1
+
+select count(*) from history where pk = '00000000-0000-0000-0000-000010123123';
+-- 0
+
+
+execute update_application_throttled(
+    '00000000-0000-0000-0000-000010123123'::uuid,
+    $$
+{
+    "foo": "2"
+}
+    $$::jsonb
+);
+
+
+select count(*) from applications where id = '00000000-0000-0000-0000-000010123123';
+-- 1
+
+┌─[ RECORD 1 ]───────┐
+│ doc │ {"foo": "2"} │
+└─────┴──────────────┘
+
+select count(*) from history where pk = '00000000-0000-0000-0000-000010123123';
+-- 0
+
+
+execute update_application_throttled(
+    '00000000-0000-0000-0000-000010123123'::uuid,
+    $$
+{
+    "foo": "3"
+}
+    $$::jsonb
+);
