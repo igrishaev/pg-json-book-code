@@ -126,3 +126,294 @@ limit 1;
 ├──────────────────────────────────────┼──────────────────────────────┤
 │ cc896171-b22e-443e-9f1e-d31cc1bf7d0b │ 2025-10-03 08:32:13.55007+03 │
 └──────────────────────────────────────┴──────────────────────────────┘
+
+
+
+create or replace function fn_applications_history()
+returns trigger as $$
+begin
+    insert into history(pk, entity, operation, doc, created_at)
+    values (
+        OLD.id,
+        'applications',
+        TG_OP,
+        old.doc,
+        current_timestamp
+    );
+    return OLD;
+end;
+$$ language plpgsql;
+
+
+create trigger trg_application_before_delete
+before delete on applications
+for each row execute function fn_applications_history();
+
+create trigger trg_application_before_update
+before update on applications
+for each row execute function fn_applications_history();
+
+
+select id from applications limit 10;
+
+┌──────────────────────────────────────┐
+│                  id                  │
+├──────────────────────────────────────┤
+│ 00000000-0000-0000-0000-000000000001 │
+│ 00000000-0000-0000-0000-000000000002 │
+│ 00000000-0000-0000-0000-000000000003 │
+│ 00000000-0000-0000-0000-000000000004 │
+│ 00000000-0000-0000-0000-000000000005 │
+│ 00000000-0000-0000-0000-000000000006 │
+│ 00000000-0000-0000-0000-000000000007 │
+│ 00000000-0000-0000-0000-000000000008 │
+│ 00000000-0000-0000-0000-000000000009 │
+│ 00000000-0000-0000-0000-000000000010 │
+└──────────────────────────────────────┘
+
+
+delete from applications
+where id = '00000000-0000-0000-0000-000000012345';
+
+
+select
+    id,
+    pk,
+    entity,
+    operation,
+    created_at,
+    jsonb_pretty(doc) as doc
+from history where pk = '00000000-0000-0000-0000-000000012345';
+
+
+┌─[ RECORD 1 ]───────────────────────────────────────────────────────────────────┐
+│ id         │ e0437f5d-19b6-4850-a2ae-51b21e626a0e                              │
+│ pk         │ 00000000-0000-0000-0000-000000012345                              │
+│ entity     │ applications                                                      │
+│ operation  │ DELETE                                                            │
+│ created_at │ 2026-06-21 15:48:55.118652+03                                     │
+│ doc        │ {                                                                ↵│
+│            │     "id": "00000000-0000-0000-0000-000000012345",                ↵│
+│            │     "status": "archived",                                        ↵│
+│            │     "amounts": [                                                 ↵│
+│            │         {                                                        ↵│
+│            │             "amount": 40528181,                                  ↵│
+│            │             "period": {                                          ↵│
+│            │                 "d": 7,                                          ↵│
+│            │                 "m": 7,                                          ↵│
+
+
+update applications
+set doc['extra'] = to_jsonb(42)
+where id = '00000000-0000-0000-0000-000000123999';
+
+
+select
+    id,
+    pk,
+    entity,
+    operation,
+    created_at,
+    jsonb_pretty(doc) as doc
+from history where pk = '00000000-0000-0000-0000-000000123999';
+
+
+┌─[ RECORD 1 ]───────────────────────────────────────────────────────────────────┐
+│ id         │ 009cc4ce-ea6b-4ea1-87b1-bed7825c8781                              │
+│ pk         │ 00000000-0000-0000-0000-000000123999                              │
+│ entity     │ applications                                                      │
+│ operation  │ UPDATE                                                            │
+│ created_at │ 2026-06-21 15:52:54.03302+03                                      │
+│ doc        │ {                                                                ↵│
+│            │     "id": "00000000-0000-0000-0000-000000123999",                ↵│
+│            │     "status": "approved",                                        ↵│
+│            │     "amounts": [                                                 ↵│
+│            │         {                                                        ↵│
+│            │             "amount": 41513124,                                  ↵│
+│            │             "period": {                                          ↵│
+│            │                 "d": 4,                                          ↵│
+│            │                 "m": 8,                                          ↵│
+│            │                 "w": 7,                                          ↵│
+│            │                 "y": 1                                           ↵│
+│            │             },                                                   ↵│
+│            │             "currency": "USD"                                    ↵│
+
+
+alter table applications disable trigger trg_application_before_delete;
+
+-- enable trigger
+
+
+
+drop trigger trg_application_before_delete on applications;
+drop trigger trg_application_before_update on applications;
+
+
+prepare delete_application as
+with
+OLD as (
+    delete from applications where id = $1::uuid
+    returning *
+)
+insert into history(pk, entity, operation, doc, created_at)
+select
+    OLD.id,
+    'applications',
+    'DELETE',
+    old.doc,
+    current_timestamp
+from
+    OLD;
+
+
+-- rewrite to function
+
+
+execute delete_application('00000000-0000-0000-0000-000000100999'::uuid);
+
+
+
+
+select
+    id,
+    pk,
+    entity,
+    operation,
+    created_at,
+    jsonb_pretty(doc) as doc
+from history where pk = '00000000-0000-0000-0000-000000100999';
+
+
+┌─[ RECORD 1 ]───────────────────────────────────────────────────────────────────┐
+│ id         │ 78ce995b-c865-489c-8c24-0ab26d62caef                              │
+│ pk         │ 00000000-0000-0000-0000-000000100999                              │
+│ entity     │ applications                                                      │
+│ operation  │ DELETE                                                            │
+│ created_at │ 2026-06-21 16:16:23.510292+03                                     │
+│ doc        │ {                                                                ↵│
+│            │     "id": "00000000-0000-0000-0000-000000100999",                ↵│
+│            │     "status": "archived",                                        ↵│
+│            │     "amounts": [                                                 ↵│
+│            │         {                                                        ↵│
+│            │             "amount": 11520867,                                  ↵│
+│            │             "period": {                                          ↵│
+│            │                 "d": 2,                                          ↵│
+│            │                 "m": 8,                                          ↵│
+│            │                 "w": 6,                                          ↵│
+│            │                 "y": 1                                           ↵│
+│            │             },                                                   ↵│
+│            │             "currency": "EUR"                                    ↵│
+
+
+select id from applications
+where id = '00000000-0000-0000-0000-000000100999';
+-- (0 rows)
+
+
+
+prepare update_application as
+with
+OLD as (
+    select * from applications
+    where id = $1
+),
+NEW as (
+    update applications
+    set doc = $2::jsonb
+    where id = $1::uuid
+    returning *
+)
+insert into history(pk, entity, operation, doc, created_at)
+select
+    OLD.id,
+    'applications',
+    'UPDATE',
+    OLD.doc,
+    current_timestamp
+from
+    OLD;
+
+
+execute update_application(
+    '00000000-0000-0000-0000-000000100321'::uuid,
+    $$
+{
+    "application_id": 100321,
+    "some_field": "test"
+}
+    $$::jsonb
+);
+
+
+select doc from applications
+where id = '00000000-0000-0000-0000-000000100321';
+
+┌─[ RECORD 1 ]───────────────────────────────────────────┐
+│ doc │ {"some_field": "test", "application_id": 100321} │
+└─────┴──────────────────────────────────────────────────┘
+
+
+
+select
+    id,
+    pk,
+    entity,
+    operation,
+    created_at,
+    jsonb_pretty(doc) as doc
+from history where pk = '00000000-0000-0000-0000-000000100321';
+
+┌─[ RECORD 1 ]───────────────────────────────────────────────────────────────────┐
+│ id         │ 47e6cdba-e1fe-4320-acdb-ef193ef7f3e6                              │
+│ pk         │ 00000000-0000-0000-0000-000000100321                              │
+│ entity     │ applications                                                      │
+│ operation  │ UPDATE                                                            │
+│ created_at │ 2026-06-21 16:27:53.384049+03                                     │
+│ doc        │ {                                                                ↵│
+│            │     "id": "00000000-0000-0000-0000-000000100321",                ↵│
+│            │     "status": "archived",                                        ↵│
+│            │     "amounts": [                                                 ↵│
+│            │         {                                                        ↵│
+│            │             "amount": 50222648,                                  ↵│
+│            │             "period": {                                          ↵│
+
+
+
+------------- TODO
+
+
+prepare update_application_throttled as
+with
+upsert as (
+    insert into applications(id, doc)
+    values ($1::uuid, $2::jsonb)
+    on conflict (id) do update
+    set doc = excluded.DOC
+    returning NEW.id, OLD.doc as doc_old, NEW.doc as doc_new
+)
+insert into history(pk, entity, operation, doc, created_at)
+select
+    id,
+    'applications',
+    'UPDATE',
+    doc_new,
+    current_timestamp
+from
+    upsert
+where
+        doc_old is not null
+    and exists(select id from history where pk = upsert.id and created_at < now() - interval '1 minute');
+
+
+
+execute update_application_throttled(
+    '00000000-0000-0000-0000-000000101321'::uuid,
+    $$
+{
+    "foo": "bar"
+}
+    $$::jsonb
+);
+
+
+select count(*) from history where pk = '00000000-0000-0000-0000-000000100333';
