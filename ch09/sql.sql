@@ -617,3 +617,57 @@ SELECT cron.schedule(
     '0 3 * * 7',
     'call truncate_and_dump_history()'
 );
+
+
+
+
+
+
+deallocate update_application;
+
+
+prepare update_application as
+with
+upsert as (
+    insert into applications(id, doc)
+    values ($1::uuid, $2::jsonb)
+    on conflict (id) do update set
+    doc = excluded.DOC,
+    updated_at = now()
+    returning NEW.id, NEW.doc as doc_new, OLD.doc as doc_old
+)
+insert into history(pk, entity, operation, doc, created_at)
+select
+    id,
+    'applications',
+    'UPDATE',
+    doc_old,
+    current_timestamp
+from
+    upsert
+where
+        doc_old is not null
+    and not exists(select id from history where pk = upsert.id and created_at > now() - interval '1 minute');
+
+
+prepare update_application as
+with
+OLD as (
+    select * from applications
+    where id = $1
+),
+NEW as (
+    update applications
+    set doc = $2::jsonb
+    where id = $1::uuid
+    returning *
+)
+insert into history(pk, entity, operation, doc, created_at)
+select
+    OLD.id,
+    'applications',
+    'UPDATE',
+    OLD.doc,
+    current_timestamp
+from
+    OLD;
