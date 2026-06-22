@@ -379,9 +379,6 @@ from history where pk = '00000000-0000-0000-0000-000000100321';
 
 
 
-------------- ///////////
-
-
 prepare update_application_throttled as
 with
 upsert as (
@@ -390,20 +387,20 @@ upsert as (
     on conflict (id) do update set
     doc = excluded.DOC,
     updated_at = now()
-    returning NEW.id, OLD.doc as doc_old, NEW.doc as doc_new
+    returning NEW.id, OLD.doc as doc_old
 )
 insert into history(pk, entity, operation, doc, created_at)
 select
     id,
     'applications',
     'UPDATE',
-    doc_new,
+    doc_old,
     current_timestamp
 from
     upsert
 where
         doc_old is not null
-    and exists(select id from history where pk = upsert.id and created_at < now() - interval '1 minute');
+    and not exists(select id from history where pk = upsert.id and created_at > now() - interval '1 minute');
 
 
 
@@ -415,14 +412,7 @@ execute update_application_throttled(
 }
     $$::jsonb
 );
-
-
-select count(*) from applications where id = '00000000-0000-0000-0000-000010123123';
--- 1
-
-select count(*) from history where pk = '00000000-0000-0000-0000-000010123123';
--- 0
-
+-- INSERT 0 0
 
 execute update_application_throttled(
     '00000000-0000-0000-0000-000010123123'::uuid,
@@ -432,18 +422,9 @@ execute update_application_throttled(
 }
     $$::jsonb
 );
+-- INSERT 0 1
 
-
-select count(*) from applications where id = '00000000-0000-0000-0000-000010123123';
--- 1
-
-┌─[ RECORD 1 ]───────┐
-│ doc │ {"foo": "2"} │
-└─────┴──────────────┘
-
-select count(*) from history where pk = '00000000-0000-0000-0000-000010123123';
--- 0
-
+-- TODO: wait 1 min
 
 execute update_application_throttled(
     '00000000-0000-0000-0000-000010123123'::uuid,
@@ -452,4 +433,187 @@ execute update_application_throttled(
     "foo": "3"
 }
     $$::jsonb
+);
+-- INSERT 0 0
+
+
+table applications;
+┌─[ RECORD 1 ]──────────────────────────────────────┐
+│ id         │ 00000000-0000-0000-0000-000010123123 │
+│ doc        │ {"foo": "3"}                         │
+│ created_at │ 2026-06-22 10:49:07.873169+03        │
+│ updated_at │ 2026-06-22 10:49:23.494707+03        │
+└────────────┴──────────────────────────────────────┘
+
+table history;
+┌─[ RECORD 1 ]──────────────────────────────────────┐
+│ id         │ 7b07b9d9-2a09-46f0-9355-1dacc654ac93 │
+│ pk         │ 00000000-0000-0000-0000-000010123123 │
+│ entity     │ applications                         │
+│ operation  │ UPDATE                               │
+│ doc        │ {"foo": "1"}                         │
+│ created_at │ 2026-06-22 10:49:11.080188+03        │
+│ user_id    │ <null>                               │
+│ comment    │ <null>                               │
+└────────────┴──────────────────────────────────────┘
+
+-- if wait
+
+table applications;
+┌─[ RECORD 1 ]──────────────────────────────────────┐
+│ id         │ 00000000-0000-0000-0000-000010123123 │
+│ doc        │ {"foo": "3"}                         │
+│ created_at │ 2026-06-22 10:50:54.734313+03        │
+│ updated_at │ 2026-06-22 10:52:54.42768+03         │
+└────────────┴──────────────────────────────────────┘
+
+table history;
+┌─[ RECORD 1 ]──────────────────────────────────────┐
+│ id         │ 63b3e381-ea52-485f-bd29-03bb7658e788 │
+│ pk         │ 00000000-0000-0000-0000-000010123123 │
+│ entity     │ applications                         │
+│ operation  │ UPDATE                               │
+│ doc        │ {"foo": "1"}                         │
+│ created_at │ 2026-06-22 10:50:59.411999+03        │
+│ user_id    │ <null>                               │
+│ comment    │ <null>                               │
+├─[ RECORD 2 ]──────────────────────────────────────┤
+│ id         │ 62d0a592-ccb8-4d7e-97fc-e9345b2e869a │
+│ pk         │ 00000000-0000-0000-0000-000010123123 │
+│ entity     │ applications                         │
+│ operation  │ UPDATE                               │
+│ doc        │ {"foo": "2"}                         │
+│ created_at │ 2026-06-22 10:52:54.42768+03         │
+│ user_id    │ <null>                               │
+│ comment    │ <null>                               │
+└────────────┴──────────────────────────────────────┘
+
+-- a note about comment
+
+...
+
+
+prepare restore_application as
+with
+del_current_doc as (
+    delete from applications where id = $1::uuid
+    returning *
+),
+create_version as (
+    insert into history(pk, entity, operation, doc, created_at)
+    select
+        id,
+        'applications',
+        'RESTORE',
+        doc,
+        current_timestamp
+    from
+        del_current_doc
+),
+delete_version as (
+    delete from history
+    where
+            pk = $1::uuid
+        and created_at = $2::timestamptz
+    returning *
+)
+insert into applications (id, doc, updated_at)
+select
+    id, doc, current_timestamp
+from
+    delete_version;
+
+
+
+-- {"foo": "1"}
+-- 00000000-0000-0000-0000-000010123123 2026-06-22 10:50:59.411999+03
+
+
+
+execute restore_application('00000000-0000-0000-0000-000010123123', '2026-06-22 10:50:59.411999+03');
+
+
+table applications;
+┌─[ RECORD 1 ]──────────────────────────────────────┐
+│ id         │ 63b3e381-ea52-485f-bd29-03bb7658e788 │
+│ doc        │ {"foo": "1"}                         │
+│ created_at │ 2026-06-22 10:54:59.840803+03        │
+│ updated_at │ 2026-06-22 10:54:59.840803+03        │
+└────────────┴──────────────────────────────────────┘
+
+table history;
+┌─[ RECORD 1 ]──────────────────────────────────────┐
+│ id         │ 62d0a592-ccb8-4d7e-97fc-e9345b2e869a │
+│ pk         │ 00000000-0000-0000-0000-000010123123 │
+│ entity     │ applications                         │
+│ operation  │ UPDATE                               │
+│ doc        │ {"foo": "2"}                         │
+│ created_at │ 2026-06-22 10:52:54.42768+03         │
+│ user_id    │ <null>                               │
+│ comment    │ <null>                               │
+├─[ RECORD 2 ]──────────────────────────────────────┤
+│ id         │ aa12ccd7-4c95-4d8b-a566-a8c58b3c1468 │
+│ pk         │ 00000000-0000-0000-0000-000010123123 │
+│ entity     │ applications                         │
+│ operation  │ RESTORE                              │
+│ doc        │ {"foo": "3"}                         │
+│ created_at │ 2026-06-22 10:54:59.840803+03        │
+│ user_id    │ <null>                               │
+│ comment    │ <null>                               │
+└────────────┴──────────────────────────────────────┘
+
+
+create_version as (
+  /* insert into history */
+),
+delete_version as (
+  /* delete target from history */
+)
+
+
+delete_history_above as (
+    delete from history
+    where
+            pk = $1::uuid
+        and created_at > $2::timestamptz
+)
+
+
+
+
+
+
+copy (delete from history where created_at < now() - interval '1 year' returning *)
+to stdout with (format csv, header on);
+
+-- id,pk,entity,operation,doc,created_at,user_id,comment
+
+
+update history set created_at = now() - interval '1 year 1 day';
+
+id,pk,entity,operation,doc,created_at,user_id,comment
+62d0a592-ccb8-4d7e-97fc-e9345b2e869a,00000000-0000-0000-0000-000010123123,applications,UPDATE,"{""foo"": ""2""}",2025-06-21 11:29:36.643889+03,,
+aa12ccd7-4c95-4d8b-a566-a8c58b3c1468,00000000-0000-0000-0000-000010123123,applications,RESTORE,"{""foo"": ""3""}",2025-06-21 11:29:36.643889+03,,
+
+
+to program 'gzip > /path/to/history.csv.gzip'
+
+
+create or replace procedure truncate_and_dump_history()
+language plpgsql as $$
+begin
+    execute format($sql$
+copy (delete from history where created_at < now() - interval '1 year' returning *)
+to program 'gzip > /Users/ivan/work/pg-json-book-code/history_%s.csv.gzip' with (format csv, header on);
+    $sql$, to_char(now(), 'yyyy_mm_dd'));
+end;
+$$;
+
+call truncate_and_dump_history();
+
+
+SELECT cron.schedule(
+    'truncate-and-dump-history',
+    '0 3 * * 7',
+    'call truncate_and_dump_history()'
 );
