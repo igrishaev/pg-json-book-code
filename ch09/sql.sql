@@ -619,8 +619,19 @@ SELECT cron.schedule(
 );
 
 
+alter table history
+add column patch jsonb null;
 
 
+/*
+create or replace function py_make_patch(src jsonb, dst jsonb)
+returns jsonb
+transform for type jsonb
+language plpython3u strict as $$
+    import jsonpatch
+    return jsonpatch.JsonPatch.from_diff(src, dst)
+$$;
+*/
 
 
 deallocate update_application;
@@ -634,40 +645,173 @@ upsert as (
     on conflict (id) do update set
     doc = excluded.DOC,
     updated_at = now()
-    returning NEW.id, NEW.doc as doc_new, OLD.doc as doc_old
+    returning NEW.id, OLD.doc as doc_old, NEW.doc as doc_new
 )
-insert into history(pk, entity, operation, doc, created_at)
+insert into history(pk, entity, operation, doc, patch, created_at)
 select
     id,
     'applications',
     'UPDATE',
     doc_old,
+    py_make_patch(doc_old, doc_new),
     current_timestamp
 from
     upsert
 where
-        doc_old is not null
-    and not exists(select id from history where pk = upsert.id and created_at > now() - interval '1 minute');
+    doc_old is not null;
 
 
-prepare update_application as
-with
-OLD as (
-    select * from applications
-    where id = $1
-),
-NEW as (
-    update applications
-    set doc = $2::jsonb
-    where id = $1::uuid
-    returning *
-)
-insert into history(pk, entity, operation, doc, created_at)
+
+
+execute update_application(
+    '00000000-0000-0000-0000-000000100321'::uuid,
+    $$
+{
+    "application_id": 100321,
+    "some_field": "test"
+}
+    $$::jsonb
+);
+
+
+execute update_application(
+    '00000000-0000-0000-0000-000000100321'::uuid,
+    $$
+{
+    "application_id": 100321,
+    "status": "pending",
+    "some_field": "foo",
+    "accounts": [1, 2, 3]
+}
+    $$::jsonb
+);
+
+
+/*
+
+ERROR:  TypeError: Object of type Decimal is not JSON serializable
+CONTEXT:  Traceback (most recent call last):
+  PL/Python function "py_make_patch", line 3, in <module>
+    return jsonpatch.JsonPatch.from_diff(src, dst)
+  PL/Python function "py_make_patch", line 661, in from_diff
+  PL/Python function "py_make_patch", line 906, in _compare_values
+  PL/Python function "py_make_patch", line 873, in _compare_dicts
+  PL/Python function "py_make_patch", line 919, in _compare_values
+  PL/Python function "py_make_patch", line 230, in dumps
+  PL/Python function "py_make_patch", line 199, in encode
+  PL/Python function "py_make_patch", line 260, in iterencode
+  PL/Python function "py_make_patch", line 179, in default
+PL/Python function "py_make_patch"
+
+*/
+
+
+create or replace function py_make_patch(src jsonb, dst jsonb)
+returns jsonb
+language plpython3u strict as $$
+    import json
+    import jsonpatch
+    doc_src = json.loads(src)
+    doc_dst = json.loads(dst)
+    patch = jsonpatch.JsonPatch.from_diff(doc_src, doc_dst)
+    return patch.to_string()
+$$;
+
+
+execute update_application(
+    '00000000-0000-0000-0000-000000100321'::uuid,
+    $$
+{
+    "application_id": 100321,
+    "status": "pending",
+    "some_field": "foo",
+    "accounts": [1, 2, 3]
+}
+    $$::jsonb
+);
+
+
 select
-    OLD.id,
-    'applications',
-    'UPDATE',
-    OLD.doc,
-    current_timestamp
+    id, pk, entity, doc,
+    jsonb_pretty(patch) as patch
 from
-    OLD;
+    history;
+
+
+┌─[ RECORD 1 ]──────────────────────────────────────────────┐
+│ id     │ dcbb3da3-5f2c-4ae7-861c-5c401c550905             │
+│ pk     │ 00000000-0000-0000-0000-000000100321             │
+│ entity │ applications                                     │
+│ doc    │ {"some_field": "test", "application_id": 100321} │
+│ patch  │ [                                               ↵│
+│        │     {                                           ↵│
+│        │         "op": "add",                            ↵│
+│        │         "path": "/status",                      ↵│
+│        │         "value": "pending"                      ↵│
+│        │     },                                          ↵│
+│        │     {                                           ↵│
+│        │         "op": "add",                            ↵│
+│        │         "path": "/accounts",                    ↵│
+│        │         "value": [                              ↵│
+│        │             1,                                  ↵│
+│        │             2,                                  ↵│
+│        │             3                                   ↵│
+│        │         ]                                       ↵│
+│        │     },                                          ↵│
+│        │     {                                           ↵│
+│        │         "op": "replace",                        ↵│
+│        │         "path": "/some_field",                  ↵│
+│        │         "value": "foo"                          ↵│
+│        │     }                                           ↵│
+│        │ ]                                                │
+└────────┴──────────────────────────────────────────────────┘
+
+
+{"op": "add", "path": "/status", "value": "pending"}
+{"op": "add", "path": "/accounts", "value": [1, 2, 3]}
+{"op": "replace", "path": "/some_field", "value": "foo"}
+
+
+
+create or replace function py_apply_patch(doc jsonb, patch jsonb)
+returns jsonb
+transform for type jsonb
+language plpython3u immutable strict as $$
+    import jsonpatch
+    patch_obj = jsonpatch.JsonPatch(patch)
+    return patch_obj.apply(doc)
+$$;
+
+
+select py_apply_patch(
+    $$
+{"some_field": "test", "application_id": 100321}
+    $$::jsonb,
+    $$
+[
+    {"op": "add", "path": "/status", "value": "pending"},
+    {"op": "add", "path": "/accounts", "value": [1, 2, 3]},
+    {"op": "replace", "path": "/some_field", "value": "foo"}
+
+]
+    $$::jsonb) as doc_new;
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                           doc_new                                           │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ {"status": "pending", "accounts": [1, 2, 3], "some_field": "foo", "application_id": 100321} │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+prepare patch_application as
+update applications
+set doc = py_apply_patch(doc, $2::jsonb)
+where id = $1::uuid;
+
+
+execute patch_application('00000000-0000-0000-0000-000000100321'::uuid, $$
+[
+    {"op": "add", "path": "/comment", "value": "updated using a JSON patch"}
+]
+$$::jsonb);
