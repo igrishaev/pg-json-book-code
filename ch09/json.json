@@ -39,3 +39,59 @@
         "value": 2
     }
 ]
+
+
+
+// A
+
+{
+    "title": "Test 1",
+    "amount": 100,
+    "user_ids": [10, 20, 30]
+}
+
+// B
+
+{
+    "title": "Test 1",
+    "amount": 120,
+    "comment": "edited",
+    "user_ids": [10, 20, 30]
+}
+
+// C
+
+{
+    "title": "Test 2",
+    "amount": 100,
+    "user_ids": [10, 20, 30, 40]
+}
+
+
+A -> B
+[
+    {
+        "op": "replace",
+        "path": "/amount",
+        "value": 120
+    },
+    {
+        "op": "add",
+        "path": "/comment",
+        "value": "edited"
+    }
+]
+
+A -> C
+[
+    {
+        "op": "add",
+        "path": "/user_ids/3",
+        "value": 40
+    },
+    {
+        "op": "replace",
+        "path": "/title",
+        "value": "Test 2"
+    }
+]

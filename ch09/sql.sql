@@ -815,3 +815,125 @@ execute patch_application('00000000-0000-0000-0000-000000100321'::uuid, $$
     {"op": "add", "path": "/comment", "value": "updated using a JSON patch"}
 ]
 $$::jsonb);
+
+
+
+create or replace function find_conflicts(patch1 jsonb, patch2 jsonb)
+returns table (
+    i1 integer,
+    op1 text,
+    path1 text,
+    value1 jsonb,
+    from1 text,
+    i2 integer,
+    op2 text,
+    path2 text,
+    value2 jsonb,
+    from2 text
+)
+language sql immutable strict parallel safe as $$
+with
+p1 as (
+    select jt.*
+    from json_table(patch1, '$[*]' columns(
+        i     for ordinality,
+        op    text  path '$.op',
+        path  text  path '$.path',
+        value jsonb path '$.value',
+        "from"  jsonb path '$.from'
+    )) as jt
+),
+p2 as (
+    select jt.*
+    from json_table(patch2, '$[*]' columns(
+        i     for ordinality,
+        op    text  path '$.op',
+        path  text  path '$.path',
+        value jsonb path '$.value',
+        "from"  jsonb path '$.from'
+    )) as jt
+)
+select *
+from p1, p2
+where
+        p1.op = p2.op
+    and p1.path = p2.path
+    and p1.value != p2.value;
+$$;
+
+
+select * from find_conflicts(
+$$
+[
+    {
+        "op": "replace",
+        "path": "/amount",
+        "value": 120
+    },
+    {
+        "op": "add",
+        "path": "/comment",
+        "value": "edited"
+    }
+]
+$$::jsonb,
+$$
+[
+    {
+        "op": "add",
+        "path": "/user_ids/3",
+        "value": 40
+    },
+    {
+        "op": "replace",
+        "path": "/title",
+        "value": "Test 2"
+    }
+]
+$$::jsonb
+);
+
+┌────┬─────┬───────┬────────┬───────┬────┬─────┬───────┬────────┬───────┐
+│ i1 │ op1 │ path1 │ value1 │ from1 │ i2 │ op2 │ path2 │ value2 │ from2 │
+├────┼─────┼───────┼────────┼───────┼────┼─────┼───────┼────────┼───────┤
+└────┴─────┴───────┴────────┴───────┴────┴─────┴───────┴────────┴───────┘
+(0 rows)
+
+
+
+select * from find_conflicts(
+$$
+[
+    {
+        "op": "replace",
+        "path": "/amount",
+        "value": 120
+    },
+    {
+        "op": "add",
+        "path": "/comment",
+        "value": "edited"
+    }
+]
+$$::jsonb,
+$$
+[
+    {
+        "op": "replace",
+        "path": "/amount",
+        "value": 150
+    },
+    {
+        "op": "replace",
+        "path": "/title",
+        "value": "Test 2"
+    }
+]
+$$::jsonb
+);
+
+┌────┬─────────┬─────────┬────────┬────────┬────┬─────────┬─────────┬────────┬────────┐
+│ i1 │   op1   │  path1  │ value1 │ from1  │ i2 │   op2   │  path2  │ value2 │ from2  │
+├────┼─────────┼─────────┼────────┼────────┼────┼─────────┼─────────┼────────┼────────┤
+│  1 │ replace │ /amount │ 120    │ <null> │  1 │ replace │ /amount │ 150    │ <null> │
+└────┴─────────┴─────────┴────────┴────────┴────┴─────────┴─────────┴────────┴────────┘
