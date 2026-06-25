@@ -565,6 +565,23 @@ layers as (
 
 ----
 
+
+select to_tsvector('russian', 'Во поле берёза стояла.');
+
+┌────────────────────────────┐
+│        to_tsvector         │
+├────────────────────────────┤
+│ 'берез':3 'пол':2 'стоя':4 │
+└────────────────────────────┘
+
+select to_tsvector('Во поле берёза стояла.');
+
+┌───────────────────────────────────────┐
+│              to_tsvector              │
+├───────────────────────────────────────┤
+│ 'берёза':3 'во':1 'поле':2 'стояла':4 │
+└───────────────────────────────────────┘
+
 select to_tsvector('russian', $$
   Долго у моря ждал он ответа,
   Не дождался, к старухе воротился.
@@ -579,3 +596,144 @@ $$);
 ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ 'ворот':11 'гляд':12 'дожда':8 'долг':1 'ждал':4 'землянк':16 'корыт':26 'мор':3 'не':24 'ответ':6 'порог':18 'пред':23 'разбит':25 'сид':19 'старух':10,21 │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+select to_tsvector('russian', 'Во поле берёза стояла.')
+    @@ to_tsquery('russian', 'берёза & стояла') as res;
+
+┌─────┐
+│ res │
+├─────┤
+│ t   │
+└─────┘
+
+select to_tsvector('russian', 'Во поле берёза стояла.')
+    @@ to_tsquery('russian', 'берёза & кудрявая') as res;
+
+
+
+create index idx_application_comment_tsvector
+on applications
+using gin (to_tsvector('english', doc->>'comment'));
+
+
+
+
+
+
+  select * from (
+    select id, 50 as rank
+    from applications
+    where to_tsvector('english', doc->>'comment') @@ to_tsquery('english', '12398')
+    limit 50
+  ) as sub5
+
+
+
+┌──────────────────────────────────────┬──────┐
+│                  id                  │ rank │
+├──────────────────────────────────────┼──────┤
+│ 00000000-0000-0000-0000-000000012398 │   50 │
+└──────────────────────────────────────┴──────┘
+
+
+select cfgname from pg_ts_config;
+
+┌────────────┐
+│  cfgname   │
+├────────────┤
+│ simple     │
+│ arabic     │
+│ armenian   │
+│ basque     │
+│ catalan    │
+│ danish     │
+│ dutch      │
+│ english    │
+│ finnish    │
+│ french     │
+│ german     │
+│ greek      │
+│ hindi      │
+│ hungarian  │
+│ indonesian │
+│ irish      │
+│ italian    │
+│ lithuanian │
+│ nepali     │
+│ norwegian  │
+│ portuguese │
+│ romanian   │
+│ russian    │
+│ serbian    │
+│ spanish    │
+│ swedish    │
+│ tamil      │
+│ turkish    │
+│ yiddish    │
+└────────────┘
+
+
+create or replace function app_detect_lang(doc jsonb)
+returns regconfig
+transform for type jsonb
+language plpython3u immutable strict parallel safe as $$
+    from langdetect import detect
+    lang = detect(doc["comment"])
+
+    mapping = {
+        "en": "english",
+        "ru": "russian",
+        "fr": "french"
+    }
+
+    if lang in mapping:
+        return mapping[lang]
+    else:
+        return 'simple'
+$$;
+
+
+select app_detect_lang($${"comment": "fox and bird"}$$::jsonb);
+┌─────────────────┐
+│ app_detect_lang │
+├─────────────────┤
+│ english         │
+└─────────────────┘
+
+
+select app_detect_lang($${"comment": "я русский"}$$::jsonb);
+┌─────────────────┐
+│ app_detect_lang │
+├─────────────────┤
+│ russian         │
+└─────────────────┘
+
+
+
+create or replace function app_ts_vector(doc jsonb)
+returns tsvector
+language sql immutable strict parallel safe
+return to_tsvector(app_detect_lang(doc), doc->>'comment');
+
+
+select app_ts_vector(doc) as ts_vec
+from applications limit 10;
+
+┌───────────────────────────────────┐
+│              ts_vec               │
+├───────────────────────────────────┤
+│ '116141':3 'comment':1 'number':2 │
+│ '116142':3 'comment':1 'number':2 │
+│ '116143':3 'comment':1 'number':2 │
+│ '116144':3 'comment':1 'number':2 │
+│ '116145':3 'comment':1 'number':2 │
+│ '116146':3 'comment':1 'number':2 │
+│ '116147':3 'comment':1 'number':2 │
+│ '116148':3 'comment':1 'number':2 │
+│ '116149':3 'comment':1 'number':2 │
+│ '116150':3 'comment':1 'number':2 │
+└───────────────────────────────────┘
