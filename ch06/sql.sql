@@ -88,18 +88,15 @@ from demo;
 strict $.path.to.node
 lax $.path.to.node
 
-
-select
-    jsonb_path_query(doc, 'lax $.hello.test') as node
-from demo;
-
-
 select
     jsonb_path_query(doc, 'strict $.hello.test') as node
 from demo;
 
 -- ERROR:  JSON object does not contain key "hello"
 
+select
+    jsonb_path_query(doc, 'lax $.hello.test') as node
+from demo;
 
 
 
