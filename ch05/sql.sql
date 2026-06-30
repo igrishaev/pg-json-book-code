@@ -420,3 +420,19 @@ where _org_id between
 │ Planning Time: 0.764 ms                                                                                                                       │
 │ Execution Time: 218.374 ms                                                                                                                    │
 └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+create table demo(
+    x integer not null default 0,
+    y integer not null default 0,
+    sum integer generated always as (x + y) stored
+);
+
+insert into demo values (1, 2), (3, 4)
+returning x, y, sum;
+
+┌───┬───┬─────┐
+│ x │ y │ sum │
+├───┼───┼─────┤
+│ 1 │ 2 │   3 │
+│ 3 │ 4 │   7 │
+└───┴───┴─────┘
