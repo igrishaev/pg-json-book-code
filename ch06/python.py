@@ -58,6 +58,19 @@ Field.register_lookup(JsonbAtAt)
 Applications.objects.filter(doc__atat=(path, op, value))
 
 
+Applications.objects.filter(doc__atat=(["attrs", "application_id"], "==", 12345))
+
 
 Extra/Raw
 https://docs.djangoproject.com/en/6.0/ref/models/querysets/#extra
+
+
+query = """
+select id, doc from applications
+where doc @@ ?
+limit 100
+"""
+
+path = '$.departments.users.email == "user_65@test.com"'
+
+conn.execute(query, params=(path, ))

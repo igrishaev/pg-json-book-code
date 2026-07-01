@@ -421,6 +421,8 @@ select id, doc from applications
 where doc @@ $jsonpath$$.departments.users.email == "user_65@test.com"$jsonpath$
 limit 10;
 
+where doc @@ '$.attrs.application_id == 12345'
+
 
 /*
 select id from applications
