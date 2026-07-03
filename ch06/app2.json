@@ -96,3 +96,26 @@
   },
   "application_id": 1055
 }
+
+
+"departments": [
+  {
+    "id": "00000000-0000-0000-0000-000000000005",
+    "code": "dep_5",
+    "name": "Department 5",
+    "users": [
+      {
+        "id": "00000000-0000-0000-0000-000000000055",
+        "name": "User 55",
+        "role": "support",
+        "email": "user_55@test.com"
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000065",
+        "name": "User 65",
+        "role": "decision-maker",
+        "email": "user_65@test.com"
+      }
+    ]
+  }
+]
