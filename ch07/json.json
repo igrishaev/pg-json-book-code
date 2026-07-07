@@ -97,30 +97,6 @@
             {
                "id":304,
                "title":"Product D"
-            }{
-               "id":323,
-               "title":"Product E"
-            }
-         ]
-      }
-   ]
-}
-
-{
-   "id":"101",
-   "title":"Product A",
-   "children":[
-      {
-         "id":"104",
-         "title":"Product B"
-      },
-      {
-         "id":"206",
-         "title":"Product C",
-         "children":[
-            {
-               "id":304,
-               "title":"Product D"
             },
             {
                "id":323,

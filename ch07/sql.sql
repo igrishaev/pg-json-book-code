@@ -32,6 +32,25 @@ limit
 │ 689536 │ active │ org         │ 2026-03-19 │ User 0536  │ Organization 536 │
 
 
+
+┌────────┬────────┬────────────┬────────────┬──────────────────┬──────────┬───────────────┬────────────────────┐
+│ app_id │ status │ created_at │ created_by │  org_short_name  │ dep_code │   dep_name    │       users        │
+├────────┼────────┼────────────┼────────────┼──────────────────┼──────────┼───────────────┼────────────────────┤
+│ 399715 │ active │ 2026-03-19 │ User 0715  │ Organization 715 │ dep_15   │ Department 15 │ User 715, User 725 │
+│ 399715 │ active │ 2026-03-19 │ User 0715  │ Organization 715 │ dep_25   │ Department 25 │ User 735, User 45  │
+│ 565634 │ active │ 2026-03-19 │ User 0634  │ Organization 634 │ dep_9    │ Department 9  │ User 634, User 644 │
+│ 565634 │ active │ 2026-03-19 │ User 0634  │ Organization 634 │ dep_19   │ Department 19 │ User 654, User 39  │
+│ 280547 │ active │ 2026-03-19 │ User 0547  │ Organization 547 │ dep_22   │ Department 22 │ User 547, User 557 │
+│ 280547 │ active │ 2026-03-19 │ User 0547  │ Organization 547 │ dep_32   │ Department 32 │ User 567, User 52  │
+│ 590919 │ active │ 2026-03-19 │ User 0919  │ Organization 919 │ dep_19   │ Department 19 │ User 919, User 929 │
+│ 590919 │ active │ 2026-03-19 │ User 0919  │ Organization 919 │ dep_29   │ Department 29 │ User 939, User 49  │
+│ 225917 │ active │ 2026-03-19 │ User 0917  │ Organization 917 │ dep_17   │ Department 17 │ User 917, User 927 │
+│ 225917 │ active │ 2026-03-19 │ User 0917  │ Organization 917 │ dep_27   │ Department 27 │ User 937, User 47  │
+│ 66410  │ active │ 2026-03-19 │ User 0410  │ Organization 410 │ dep_10   │ Department 10 │ User 410, User 420 │
+│ 66410  │ active │ 2026-03-19 │ User 0410  │ Organization 410 │ dep_20   │ Department 20 │ User 430, User 40  │
+
+
+
 select
     doc->>'application_id' as app_id,
     doc->>'status' as status,
@@ -528,6 +547,16 @@ group by currency;
 └──────────┴───────────────┴───────────┘
 
 
+select
+    doc->>'id' as id,
+    doc->>'title' as title,
+    0 as level,
+    doc->'children' as children
+from
+    ...
+
+
+
 with
 recursive init as (
     select
@@ -621,12 +650,16 @@ language sql immutable strict parallel safe
 return (doc->>'application_id')::int8;
 
 
+show search_path;
+-- "$user", public
+
+
 set search_path to app,public,"$user";
 
 
 select application_id(doc) as app_id
 from applications limit 10;
-
+-- no error
 
 create or replace function app_user_names(doc jsonb)
 returns text
@@ -860,6 +893,7 @@ select func_a(8);
 
 drop function func_b;
 
+select func_a(8);
 
 ERROR:  function func_b(integer) does not exist
 LINE 1: func_b(x)
@@ -886,6 +920,15 @@ ERROR:  cannot drop function func_b(integer) because other objects depend on it
 DETAIL:  function func_a(integer) depends on function func_b(integer)
 HINT:  Use DROP ... CASCADE to drop the dependent objects too.
 
+
+/*
+    Given a separating string and a jsonb array of items,
+    concatenate them using the separator. All items are
+    coerced to text. Duplicates are removed, NULL items
+    are skipped. Usage: ...
+*/
+create or replace function jsonb_string_agg(sep text, items jsonb)
+...
 
 
 create or replace function jsonb_string_agg(sep text, items jsonb)
