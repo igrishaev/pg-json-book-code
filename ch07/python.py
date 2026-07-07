@@ -2,7 +2,7 @@
 
 import pytest
 
-TEST_DB_URL = "sqlite:///:memory:"
+TEST_DB_URL = "postgresql://localhost..."
 
 @pytest.fixture(scope="session")
 def db_conn():
@@ -13,13 +13,10 @@ def db_conn():
     yield conn
     close_connection(conn)
 
-
 def test_jsonb_string_agg(db_conn):
     query = "select jsonb_string_agg(?::text, ?::jsonb) as val"
     result = db_conn.execute(query, (', ', [1, 2, 3]))
     assert result[0].val = "1, 2, 3"
-
-
 
 @pytest.mark.parametrize("sep, array, expected", [
     (", ",  [1, 2, 3],             "1, 2, 3"),
