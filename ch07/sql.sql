@@ -1126,6 +1126,11 @@ refresh materialized view mv_active_apps_3_months;
 create unique index if not exists idx_mv_active_apps_3_months_app_id
 on mv_active_apps_3_months (app_id);
 
+
+select * from mv_active_apps_3_months
+where status = '...'
+
+
 explain analyze
 select * from mv_active_apps_3_months
 where app_id = 472100;
@@ -1253,6 +1258,16 @@ Indexes:
     "idx_applications_doc_departments_gin_jsonb_path_ops" gin ((doc['departments'::text]) jsonb_path_ops)
     "idx_applications_doc_gin_jsonb_path_ops" gin (doc jsonb_path_ops)
 Access method: heap
+
+
+SELECT cron.schedule(
+  'prewarm-idx-app-doc',
+  '0 */3 * * 1-5',
+  $$
+    select pg_prewarm('idx_applications_doc_gin_jsonb_path_ops')
+  $$
+);
+
 
 select pg_prewarm('idx_applications_doc_gin_jsonb_path_ops') as pages;
 
