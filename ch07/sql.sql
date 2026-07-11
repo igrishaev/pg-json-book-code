@@ -243,7 +243,6 @@ from
 limit
     1000;
 
-
 ┌────────────────┬──────────┬─────────────┬──────────┬───────────────┬───────────┬────────────────┐
 │ application_id │  status  │ credit_type │ dep_code │   dep_name    │ user_name │   user_role    │
 ├────────────────┼──────────┼─────────────┼──────────┼───────────────┼───────────┼────────────────┤
@@ -421,6 +420,24 @@ from
     )) as jt
 limit
     1000;
+
+
+select
+    jt.*
+from
+    applications,
+    json_table(doc, '$' passing 'dep_15' as dep_code, $1::text as user_role
+    columns(...)) as jt
+limit
+    1000;
+
+create or replace function foo()
+returns integer
+language sql as $$
+select x from generate_series(1, 3) as seq(x)
+$$;
+
+select foo();
 
 
 
@@ -758,6 +775,30 @@ select app_last_event_user_id(doc, 'active') as user_id
 from applications limit 10;
 
 
+create or replace function app_users(doc jsonb)
+returns setof text
+language sql immutable strict parallel safe as $$
+select
+    sub->>0 as name
+from
+    jsonb_path_query(doc, '$.departments.users.name') as sub
+$$;
+
+
+select id, app_users(doc) from applications limit 8;
+
+┌──────────────────────────────────────┬───────────┐
+│                  id                  │ app_users │
+├──────────────────────────────────────┼───────────┤
+│ 00000000-0000-0000-0000-000000635650 │ User 650  │
+│ 00000000-0000-0000-0000-000000635650 │ User 660  │
+│ 00000000-0000-0000-0000-000000635650 │ User 670  │
+│ 00000000-0000-0000-0000-000000635650 │ User 30   │
+│ 00000000-0000-0000-0000-000000635652 │ User 652  │
+│ 00000000-0000-0000-0000-000000635652 │ User 662  │
+│ 00000000-0000-0000-0000-000000635652 │ User 672  │
+│ 00000000-0000-0000-0000-000000635652 │ User 32   │
+└──────────────────────────────────────┴───────────┘
 
 
 create or replace function app_created_by_roles(doc jsonb)
@@ -919,6 +960,14 @@ drop function func_b;
 ERROR:  cannot drop function func_b(integer) because other objects depend on it
 DETAIL:  function func_a(integer) depends on function func_b(integer)
 HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+
+
+SELECT
+    *
+from
+    pg_catalog.pg_depend
+where
+    oid = 'func_b'::regclass;
 
 
 /*
