@@ -575,7 +575,7 @@ from
 
 
 with
-recursive init as (
+recursive rec as (
     select
         doc->>'id' as id,
         doc->>'title' as title,
@@ -615,11 +615,11 @@ recursive init as (
         level + 1 as level,
         doc->'children' as children
     from
-        init,
+        rec,
         jsonb_array_elements(children) as _(doc)
 )
 select id, level, title
-from init;
+from rec;
 
 ┌─────┬───────┬───────────┐
 │ id  │ level │   title   │
