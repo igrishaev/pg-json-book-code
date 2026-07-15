@@ -441,7 +441,7 @@ select foo();
 
 
 
-
+-- TODO
 select
     dep_code,
     user_role,
@@ -474,6 +474,7 @@ order by
 limit
     1000;
 
+-- TODO: jsonb group
 
 ┌──────────┬────────────────┬───────────┐
 │ dep_code │   user_role    │ app_count │
@@ -504,7 +505,7 @@ limit
 
 
 
-
+-- TODO
 select
     jt.*
 from
@@ -532,7 +533,7 @@ limit
 │         152131 │ 2 │ 91184516 │ USD      │
 
 
-
+-- TODO
 select
     currency,
     sum(amount) as amount_total,
