@@ -1194,6 +1194,10 @@ where app_id = 472100;
 │ Execution Time: 0.081 ms                                                                                                                                    │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+
+copy (select * from mv_... where status = 'active')
+to program 'gzip > report_active.csv.gzip' with (format CSV);
+
 refresh materialized view concurrently mv_active_apps_3_months;
 
 
