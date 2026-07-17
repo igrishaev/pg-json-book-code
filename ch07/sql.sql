@@ -1314,6 +1314,16 @@ Indexes:
 Access method: heap
 
 
+
+create or replace procedure dump_daily_report()
+language sql as $$
+    copy (select * from /* your report */)
+    to program 'gzip > /path/to/report.csv.gzip'
+    with (format csv, header on)
+$$;
+
+call dump_daily_report();
+
 SELECT cron.schedule(
   'prewarm-idx-app-doc',
   '0 */3 * * 1-5',
