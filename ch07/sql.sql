@@ -440,8 +440,28 @@ $$;
 select foo();
 
 
+select
+    (doc #>> '{application_id}')::int as app_id,
+    jsonb_array_length(doc['departments']) as dep_count
+from
+    applications
+limit
+    10;
 
--- TODO
+┌────────┬───────────┐
+│ app_id │ dep_count │
+├────────┼───────────┤
+│      1 │         2 │
+│      2 │         2 │
+│      3 │         2 │
+│      4 │         2 │
+│      5 │         2 │
+│      6 │         2 │
+│      8 │         2 │
+│      9 │         2 │
+└────────┴───────────┘
+
+
 select
     dep_code,
     user_role,
@@ -474,8 +494,6 @@ order by
 limit
     1000;
 
--- TODO: jsonb group
-
 ┌──────────┬────────────────┬───────────┐
 │ dep_code │   user_role    │ app_count │
 ├──────────┼────────────────┼───────────┤
@@ -505,7 +523,6 @@ limit
 
 
 
--- TODO
 select
     jt.*
 from
@@ -533,7 +550,64 @@ limit
 │         152131 │ 2 │ 91184516 │ USD      │
 
 
--- TODO
+
+create or replace function tenor_to_ts(ts_from timestamptz, tenor jsonb)
+returns timestamptz
+language sql immutable strict parallel safe as $$
+select
+    ts_from + interval '1 year'  * y
+            + interval '1 month' * m
+            + interval '7 days'  * w
+            + interval '1 day'   * d
+from
+    json_table(tenor, '$' columns(
+        y integer path '$.y',
+        m integer path '$.m',
+        w integer path '$.w',
+        d integer path '$.d'
+    ))
+$$;
+
+select tenor_to_ts(date('2025-01-01'), $$
+{
+    "y": 1, "m": 2, "w": 3, "d": 4
+}
+$$::jsonb) as ts;
+
+┌────────────────────────┐
+│           ts           │
+├────────────────────────┤
+│ 2026-03-26 00:00:00+03 │
+└────────────────────────┘
+
+
+ts_from + interval '1 year'  * coalesce(y, 0)
+        + interval '1 month' * coalesce(m, 0)
+        + interval '7 days'  * coalesce(w, 0)
+        + interval '1 day'   * coalesce(d, 0)
+
+
+
+create or replace function tenor_to_ts(ts_from timestamptz, tenor jsonb)
+returns timestamptz
+language sql immutable strict parallel safe as $$
+select
+    ts_from + interval '1 year'  * coalesce(y, 0)
+            + interval '1 month' * coalesce(m, 0)
+            + interval '7 days'  * coalesce(w, 0)
+            + interval '1 day'   * coalesce(d, 0)
+from
+    json_table(tenor, '$' columns(
+        y integer path '$.y',
+        m integer path '$.m',
+        w integer path '$.w',
+        d integer path '$.d'
+    ))
+$$;
+
+
+
+
 select
     currency,
     sum(amount) as amount_total,
