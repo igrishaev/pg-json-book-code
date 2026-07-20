@@ -551,7 +551,7 @@ limit
 
 
 
-create or replace function tenor_to_ts(ts_from timestamptz, tenor jsonb)
+create or replace function period_to_ts(ts_from timestamptz, period jsonb)
 returns timestamptz
 language sql immutable strict parallel safe as $$
 select
@@ -560,7 +560,7 @@ select
             + interval '7 days'  * w
             + interval '1 day'   * d
 from
-    json_table(tenor, '$' columns(
+    json_table(period, '$' columns(
         y integer path '$.y',
         m integer path '$.m',
         w integer path '$.w',
@@ -568,7 +568,7 @@ from
     ))
 $$;
 
-select tenor_to_ts(date('2025-01-01'), $$
+select period_to_ts(date('2025-01-01'), $$
 {
     "y": 1, "m": 2, "w": 3, "d": 4
 }
@@ -588,7 +588,7 @@ ts_from + interval '1 year'  * coalesce(y, 0)
 
 
 
-create or replace function tenor_to_ts(ts_from timestamptz, tenor jsonb)
+create or replace function period_to_ts(ts_from timestamptz, period jsonb)
 returns timestamptz
 language sql immutable strict parallel safe as $$
 select
@@ -597,7 +597,7 @@ select
             + interval '7 days'  * coalesce(w, 0)
             + interval '1 day'   * coalesce(d, 0)
 from
-    json_table(tenor, '$' columns(
+    json_table(period, '$' columns(
         y integer path '$.y',
         m integer path '$.m',
         w integer path '$.w',
@@ -648,7 +648,7 @@ from
     ...
 
 
-
+prepare get_product_table as
 with
 recursive rec as (
     select
@@ -657,7 +657,21 @@ recursive rec as (
         0 as level,
         doc->'children' as children
     from
-        (values ($$
+        (values ($1::jsonb)) as _(doc)
+    union all
+    select
+        doc->>'id' as id,
+        doc->>'title' as title,
+        level + 1 as level,
+        doc->'children' as children
+    from
+        rec,
+        jsonb_array_elements(children) as _(doc)
+)
+select id, level, title
+from rec;
+
+execute get_product_table($$
 {
    "id":"101",
    "title":"Product A",
@@ -682,19 +696,8 @@ recursive rec as (
       }
    ]
 }
-    $$::jsonb)) as _(doc)
-    union all
-    select
-        doc->>'id' as id,
-        doc->>'title' as title,
-        level + 1 as level,
-        doc->'children' as children
-    from
-        rec,
-        jsonb_array_elements(children) as _(doc)
-)
-select id, level, title
-from rec;
+$$::jsonb);
+
 
 ┌─────┬───────┬───────────┐
 │ id  │ level │   title   │
@@ -977,6 +980,33 @@ select app_add_event($${
     "journal": []
 }$$::jsonb, '6d4fdd3a-0cea-4927-80e4-39e06fcdc2ae'::uuid, 'created')
 as doc_new;
+
+
+select
+    jsonb_pretty(
+        app_add_event(
+            '{"journal": []}'::jsonb,
+            '6d4fdd3a-0cea-4927-80e4-39e06fcdc2ae'::uuid,
+            'created'
+        )
+    )
+as doc_new;
+
+
+┌────────────────────────────────────────────────────────────────┐
+│                            doc_new                             │
+├────────────────────────────────────────────────────────────────┤
+│ {                                                             ↵│
+│     "journal": [                                              ↵│
+│         {                                                     ↵│
+│             "event": "created",                               ↵│
+│             "user_id": "6d4fdd3a-0cea-4927-80e4-39e06fcdc2ae",↵│
+│             "datetime": "2026-07-19 14:08:59.977098+03"       ↵│
+│         }                                                     ↵│
+│     ]                                                         ↵│
+│ }                                                              │
+└────────────────────────────────────────────────────────────────┘
+
 
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                               doc_new                                                               │
