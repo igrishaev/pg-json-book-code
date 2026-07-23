@@ -1,4 +1,13 @@
 
+
+sudo apt install python3 python3-pip python3-dev -y
+
+sudo apt install postgresql-contrib-17 postgresql-plpython3-17 -y
+
+python3 --version
+
+postgresql-plpython3-xx
+
 brew install python@3.13
 
 
