@@ -1,0 +1,22 @@
+"amounts": [
+  {
+    "amount": 42278084,
+    "period": {
+      "d": 6,
+      "m": 1,
+      "w": 10,
+      "y": 8
+    },
+    "currency": "RUB"
+  },
+  {
+    "amount": 92662590,
+    "period": {
+      "d": 3,
+      "m": 2,
+      "w": 10,
+      "y": 8
+    },
+    "currency": "EUR"
+  }
+]

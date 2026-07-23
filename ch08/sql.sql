@@ -70,7 +70,7 @@ select py_datetime_test(now()) as x;
 │ 2026-06-20 16:30:47.046679+03 │
 └───────────────────────────────┘
 
--- https://postgrespro.ru/docs/enterprise/18/plpython-util
+-- https://postgrespro.ru/docs/postgresql/17/plpython-util?lang=ru
 
 create or replace function py_datetime_test(dt timestamptz)
 returns text
@@ -122,16 +122,6 @@ language plpython3u as $$
     plpy.info("matrix mul result: %s" % C, hint="debug")
     return str(C)
 $$;
-
-
-select py_test3() as x;
-
-ERROR:  ModuleNotFoundError: No module named 'np'
-CONTEXT:  Traceback (most recent call last):
-  PL/Python function "py_test3", line 2, in <module>
-    import np
-PL/Python function "py_test3"
-
 
 
 select py_test3() as x;
@@ -372,3 +362,9 @@ limit
 │ 137    │ 3.701 mln RUB => 2028-05-31; 455.712 mln RUB => 2036-11-25   │
 │ 138    │ 4.096 mln RUB => 2030-10-31; 1.517 mln RUB => 2030-05-31     │
 └────────┴──────────────────────────────────────────────────────────────┘
+
+
+id = doc["attrs"]["organization"]["id"]
+
+doc = {...}
+id = doc.get("attrs", {}).get("organization", {}).get("id")
