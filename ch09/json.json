@@ -108,7 +108,7 @@ A
 B
 {
   "id": 100500,
-  "version": 2,
+  "version": 1,
   "amount": 110,
   "title": "New document"
 }
@@ -116,7 +116,7 @@ B
 C
 {
   "id": 100500,
-  "version": 2,
+  "version": 1,
   "amount": 100,
   "title": "My document"
 }
@@ -128,15 +128,30 @@ A -> B
         "op": "replace",
         "path": "/amount",
         "value": 110
-    },
-    {
-        "op": "replace",
-        "path": "/version",
-        "value": 2
     }
 ]
 
+
 A -> C
+[
+    {
+        "op": "replace",
+        "path": "/title",
+        "value": "My document"
+    }
+]
+
+
+C2
+{
+  "id": 100500,
+  "version": 1,
+  "amount": 115,
+  "title": "My document"
+}
+
+
+A -> C2
 [
     {
         "op": "replace",
@@ -145,24 +160,15 @@ A -> C
     },
     {
         "op": "replace",
-        "path": "/version",
-        "value": 2
+        "path": "/amount",
+        "value": 15
     }
 ]
 
-C2
+
 {
   "id": 100500,
-  "version": 1,
-  "amount": 105,
-  "title": "New document"
+  "version": 2,
+  "amount": 120,
+  "title": "My document"
 }
-
-A -> C2
-[
-    {
-        "op": "replace",
-        "path": "/amount",
-        "value": 105
-    }
-]
