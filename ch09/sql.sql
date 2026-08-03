@@ -817,6 +817,27 @@ execute patch_application('00000000-0000-0000-0000-000000100321'::uuid, $$
 $$::jsonb);
 
 
+create or replace function find_conflicts(patch1 jsonb, patch2 jsonb)
+returns boolean
+language sql immutable strict parallel safe
+return exists(
+  select jsonb_path_query(patch1, 'strict $[*].path')
+  intersect
+  select jsonb_path_query(patch2, 'strict $[*].path')
+);
+
+
+/*
+patch1 = make_patch(docA, docB)
+patch2 = make_patch(docA, docC)
+conflicts = find_conflicts(patch1, patch2)
+if conflicts:
+  reply(docB, patch2, conflicts)
+else:
+  doc_new = apply_patch(docB, patch2)
+  save_doc(doc_new)
+*/
+
 
 create or replace function find_conflicts(patch1 jsonb, patch2 jsonb)
 returns table (

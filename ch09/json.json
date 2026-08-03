@@ -172,3 +172,53 @@ A -> C2
   "amount": 120,
   "title": "My document"
 }
+
+F
+{
+  "id": 100500,
+  "version": 9,
+  "amount": 100,
+  "category": "risk",
+  "email": "john@test.com",
+  "title": "Customer #123",
+  "history": [
+      {
+          "event": "edited",
+          "user": 92323
+       }
+  ]
+}
+
+A -> F
+[
+    {
+        "op": "replace",
+        "path": "/title",
+        "value": "Customer #123"
+    },
+    {
+        "op": "replace",
+        "path": "/version",
+        "value": 9
+    },
+    {
+        "op": "add",
+        "path": "/category",
+        "value": "risk"
+    },
+    {
+        "op": "add",
+        "path": "/email",
+        "value": "john@test.com"
+    },
+    {
+        "op": "add",
+        "path": "/history",
+        "value": [
+            {
+                "event": "edited",
+                "user": 92323
+            }
+        ]
+    }
+]
