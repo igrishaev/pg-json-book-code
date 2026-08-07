@@ -424,7 +424,7 @@ execute update_application_throttled(
 );
 -- INSERT 0 1
 
--- TODO: wait 1 min
+-- no wait
 
 execute update_application_throttled(
     '00000000-0000-0000-0000-000010123123'::uuid,
@@ -457,33 +457,43 @@ table history;
 │ comment    │ <null>                               │
 └────────────┴──────────────────────────────────────┘
 
--- if wait
+-- wait 5 mins
+
+execute update_application_throttled(
+    '00000000-0000-0000-0000-000010123123'::uuid,
+    $$
+{
+    "foo": "4"
+}
+    $$::jsonb
+);
+-- INSERT 0 1
 
 table applications;
 ┌─[ RECORD 1 ]──────────────────────────────────────┐
 │ id         │ 00000000-0000-0000-0000-000010123123 │
-│ doc        │ {"foo": "3"}                         │
-│ created_at │ 2026-06-22 10:50:54.734313+03        │
-│ updated_at │ 2026-06-22 10:52:54.42768+03         │
+│ doc        │ {"foo": "4"}                         │
+│ created_at │ 2026-08-07 18:16:21.877745+03        │
+│ updated_at │ 2026-08-07 18:29:17.962914+03        │
 └────────────┴──────────────────────────────────────┘
 
 table history;
 ┌─[ RECORD 1 ]──────────────────────────────────────┐
-│ id         │ 63b3e381-ea52-485f-bd29-03bb7658e788 │
+│ id         │ ae9aa51f-8534-46a8-a540-fac226e7d7fa │
 │ pk         │ 00000000-0000-0000-0000-000010123123 │
 │ entity     │ applications                         │
 │ operation  │ UPDATE                               │
 │ doc        │ {"foo": "1"}                         │
-│ created_at │ 2026-06-22 10:50:59.411999+03        │
+│ created_at │ 2026-08-07 18:16:26.408051+03        │
 │ user_id    │ <null>                               │
 │ comment    │ <null>                               │
 ├─[ RECORD 2 ]──────────────────────────────────────┤
-│ id         │ 62d0a592-ccb8-4d7e-97fc-e9345b2e869a │
+│ id         │ b4faf01b-56ee-4fa4-a56c-d659a3f1ea0e │
 │ pk         │ 00000000-0000-0000-0000-000010123123 │
 │ entity     │ applications                         │
 │ operation  │ UPDATE                               │
-│ doc        │ {"foo": "2"}                         │
-│ created_at │ 2026-06-22 10:52:54.42768+03         │
+│ doc        │ {"foo": "3"}                         │
+│ created_at │ 2026-08-07 18:29:17.962914+03        │
 │ user_id    │ <null>                               │
 │ comment    │ <null>                               │
 └────────────┴──────────────────────────────────────┘
