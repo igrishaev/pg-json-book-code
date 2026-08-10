@@ -26,11 +26,11 @@ class Application(models.Model):
 
 
 import jsonpatch
-from django.db.models.signals import post_save
+from django.db.models.signals import pre_save
 from django.forms.models import model_to_dict
 
 
-@receiver(post_save, sender=Application)
+@receiver(pre_save, sender=Application)
 def save_patch(sender, app_new, **kwargs):
 
     if not instance.pk:
@@ -38,13 +38,10 @@ def save_patch(sender, app_new, **kwargs):
 
     try:
         app_old = Application.objects.get(pk=instance.pk)
-    except Order.DoesNotExist:
+    except sender.DoesNotExist:
         return
 
-    doc_old = model_to_dict(app_old)
-    doc_new = model_to_dict(app_new)
-
-    patch = jsonpatch.JsonPatch.from_diff(doc_old, doc_new)
+    patch = jsonpatch.JsonPatch.from_diff(app_old.doc, app_new.doc)
 
     History.objects.create(
         pk=instance.id,
