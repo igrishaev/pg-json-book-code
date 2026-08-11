@@ -589,10 +589,6 @@ delete_history_above as (
 )
 
 
-
-
-
-
 copy (delete from history where created_at < now() - interval '1 year' returning *)
 to stdout with (format csv, header on);
 
@@ -834,6 +830,11 @@ execute patch_application('00000000-0000-0000-0000-000000100321'::uuid, $$
 $$::jsonb);
 
 
+insert into applications (id, doc) values (
+    '00000000-0000-0000-0000-000000100321',
+    '{"some_field": "test", "application_id": 100321}'
+);
+
 prepare patch_application_with_history as
 with
 step_old as (
@@ -855,17 +856,37 @@ insert into history(pk, entity, operation, doc, patch, created_at)
       step_old;
 
 
-execute patch_application_with_history('00000000-0000-0000-0000-000000100321'::uuid, $$
-[
-    {"op": "add", "path": "/comment", "value": "updated using a JSON patch"}
-]
-$$::jsonb);
+execute patch_application_with_history(
+    '00000000-0000-0000-0000-000000100321'::uuid,
+    $$
+    [
+        {"op": "add", "path": "/comment", "value": "updated using a JSON patch"}
+    ]
+    $$::jsonb
+);
 
 
-table applications;
+select * from applications where id = '00000000-0000-0000-0000-000000100321';
 
-table history;
+select
+    jsonb_pretty(doc) as doc,
+    jsonb_pretty(patch) as patch
+from
+    history
+where
+    pk = '00000000-0000-0000-0000-000000100321';
 
+┌──────────────────────────────┬───────────────────────────────────────────────┐
+│             doc              │                     patch                     │
+├──────────────────────────────┼───────────────────────────────────────────────┤
+│ {                           ↵│ [                                            ↵│
+│     "some_field": "test",   ↵│     {                                        ↵│
+│     "application_id": 100321↵│         "op": "add",                         ↵│
+│ }                            │         "path": "/comment",                  ↵│
+│                              │         "value": "updated using a JSON patch"↵│
+│                              │     }                                        ↵│
+│                              │ ]                                             │
+└──────────────────────────────┴───────────────────────────────────────────────┘
 
 
 create or replace function find_conflicts(patch1 jsonb, patch2 jsonb)
