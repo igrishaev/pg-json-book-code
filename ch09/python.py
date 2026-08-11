@@ -31,7 +31,7 @@ from django.forms.models import model_to_dict
 
 
 @receiver(pre_save, sender=Application)
-def save_patch(sender, app_new, **kwargs):
+def save_patch(sender, instance, **kwargs):
 
     if not instance.pk:
         return
@@ -41,7 +41,7 @@ def save_patch(sender, app_new, **kwargs):
     except sender.DoesNotExist:
         return
 
-    patch = jsonpatch.JsonPatch.from_diff(app_old.doc, app_new.doc)
+    patch = jsonpatch.JsonPatch.from_diff(app_old.doc, instance.doc)
 
     History.objects.create(
         pk=instance.id,
@@ -65,8 +65,25 @@ class Application(models.Model):
 
 
 app = Application.objects.get(pk=...)
-
 app.doc["extra"] = 123
+app.save()
 
-doc_new = app.doc
-doc_old = app.tracker.previous("doc")
+
+@receiver(pre_save, sender=Application)
+def save_patch(sender, instance, **kwargs):
+
+    if not instance.pk:
+        return
+
+    doc_old = instance.tracker.previous("doc")
+    if not doc_old:
+        return
+
+    patch = jsonpatch.JsonPatch.from_diff(doc_old, instance.doc)
+
+    History.objects.create(
+        pk=instance.id,
+        entity='application',
+        ...
+        patch=patch.to_string()
+    )
