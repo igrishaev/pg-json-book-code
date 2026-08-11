@@ -727,6 +727,13 @@ language plpython3u strict as $$
     return patch.to_string()
 $$;
 
+select py_make_patch('{"a": 1}'::jsonb, '{"a": 2}'::jsonb) as patch;
+
+┌───────────────────────────────────────────────┐
+│                     patch                     │
+├───────────────────────────────────────────────┤
+│ [{"op": "replace", "path": "/a", "value": 2}] │
+└───────────────────────────────────────────────┘
 
 execute update_application(
     '00000000-0000-0000-0000-000000100321'::uuid,
