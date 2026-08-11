@@ -834,6 +834,40 @@ execute patch_application('00000000-0000-0000-0000-000000100321'::uuid, $$
 $$::jsonb);
 
 
+prepare patch_application_with_history as
+with
+step_old as (
+  select * from applications where id = $1::uuid
+),
+step_update as (
+  update applications set doc = py_apply_patch(doc, $2::jsonb)
+  where id = $1::uuid
+)
+insert into history(pk, entity, operation, doc, patch, created_at)
+  select
+      step_old.id,
+      'applications',
+      'UPDATE',
+      step_old.doc,
+      $2::jsonb,
+      current_timestamp
+  from
+      step_old;
+
+
+execute patch_application_with_history('00000000-0000-0000-0000-000000100321'::uuid, $$
+[
+    {"op": "add", "path": "/comment", "value": "updated using a JSON patch"}
+]
+$$::jsonb);
+
+
+table applications;
+
+table history;
+
+
+
 create or replace function find_conflicts(patch1 jsonb, patch2 jsonb)
 returns boolean
 language sql immutable strict parallel safe
