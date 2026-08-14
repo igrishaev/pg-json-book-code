@@ -7,6 +7,8 @@ from project.models import Application, History
 
 @receiver(pre_save, sender=Application)
 def save_history(sender, instance, **kwargs):
+    if not instance.pk:
+        return
     History.objects.create(
         pk=instance.id,
         entity='application',

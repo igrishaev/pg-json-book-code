@@ -592,6 +592,11 @@ delete_history_above as (
 copy (delete from history where created_at < now() - interval '1 year' returning *)
 to stdout with (format csv, header on);
 
+copy (delete from history where created_at < now() - interval '1 year' returning *)
+to program 'gzip > /path/to/history.csv.gzip'
+with (format csv, header on);
+
+
 -- id,pk,entity,operation,doc,created_at,user_id,comment
 
 
