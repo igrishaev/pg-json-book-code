@@ -1,5 +1,6 @@
 import jsonpatch
 
+# declare two documents
 doc_old = {
   "a": 1,
   "c": [1, 3],
@@ -11,13 +12,16 @@ doc_new = {
   "b": 2
 }
 
+# create a patch object
 patch = jsonpatch.JsonPatch.from_diff(doc_old, doc_new)
-# <jsonpatch.JsonPatch object at 0x1095d3f10>
 
-print(patch)
-## [{"op": "remove", "path": "/a"}, {"op": "remove", "path": "/d"}, {"op": "add", "path": "/b", "value": 2}, {"op": "add", "path": "/c/1", "value": 2}]
+# get JSON representation of the patch
+str(patch)
+# [{"op": "remove", "path": "/a"}, {"op": "remove", "path": "/d"}, {"op": "add", "path": "/b", "value": 2}, {"op": "add", "path": "/c/1", "value": 2}]
 
+# Apply the patch to the old document
 doc_new2 = patch.apply(doc_old)
 
+# Both new docs are equal
 doc_new == doc_new2
-## True
+# True
