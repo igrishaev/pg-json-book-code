@@ -26,14 +26,14 @@ ops = JsonPatch.operations | {
 
 JsonPatch.operations = ops
 
-doc = {"amount": 300}
+doc = {"amount": 1000}
 
 p = JsonPatch([
     {"op": "inc", "path": "/amount", "value": 200},
     {"op": "add", "path": "/foo", "value": "a"},
-    {"op": "inc", "path": "/amount", "value": 100},
+    {"op": "inc", "path": "/amount", "value": 300},
     {"op": "add", "path": "/bar", "value": "b"},
 ])
 
 print(p.apply(doc))
-# {'amount': 600, 'foo': 'a', 'bar': 'b'}
+# {'amount': 1500, 'foo': 'a', 'bar': 'b'}
