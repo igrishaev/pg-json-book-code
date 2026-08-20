@@ -229,3 +229,17 @@ A -> F
     {"op": "add", "path": "/accounts", "value": [1, 2, 3]},
     {"op": "replace", "path": "/some_field", "value": "foo"}
 ]
+
+
+
+[{"op": "replace", "path": "/amount", "value": 1500}]
+
+[
+    {"op": "replace", "path": "/amount", "value": 1200},
+    {"op": "replace", "path": "/amount", "value": 1500}
+]
+
+[
+    {"op": "inc", "path": "/amount", "value": 200},
+    {"op": "inc", "path": "/amount", "value": 300}
+]
