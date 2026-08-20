@@ -1058,6 +1058,10 @@ from (values
 ) as vals(id, patch);
 
 
+┌─[ RECORD 1 ]───────────┐
+│ doc │ {"a": 3, "b": 2} │
+└─────┴──────────────────┘
+
 
 create aggregate jsonb_concat_agg (jsonb) (
     sfunc = jsonb_concat,
