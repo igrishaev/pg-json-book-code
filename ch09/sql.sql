@@ -1035,3 +1035,61 @@ $$::jsonb
 ├────┼─────────┼─────────┼────────┼────────┼────┼─────────┼─────────┼────────┼────────┤
 │  1 │ replace │ /amount │ 120    │ <null> │  1 │ replace │ /amount │ 150    │ <null> │
 └────┴─────────┴─────────┴────────┴────────┴────┴─────────┴─────────┴────────┴────────┘
+
+
+select '[1, 2, 3]'::jsonb || '[4, 5, 6]'::jsonb as arr;
+┌─[ RECORD 1 ]─────────────┐
+│ arr │ [1, 2, 3, 4, 5, 6] │
+└─────┴────────────────────┘
+
+
+create aggregate json_patch_agg (jsonb) (
+    sfunc = py_apply_patch,
+    stype = jsonb,
+    initcond = '{}'
+);
+
+select
+    json_patch_agg(patch) as doc
+from (values
+    (1, '[{"op": "add", "path": "/a", "value": 1}]'::jsonb),
+    (2, '[{"op": "add", "path": "/b", "value": 2}]'::jsonb),
+    (3, '[{"op": "replace", "path": "/a", "value": 3}]'::jsonb)
+) as vals(id, patch);
+
+
+
+create aggregate jsonb_concat_agg (jsonb) (
+    sfunc = jsonb_concat,
+    stype = jsonb,
+    initcond = '[]'
+);
+
+
+select
+    jsonb_pretty(jsonb_concat_agg(patch)) as doc
+from (values
+    (1, '[{"op": "add", "path": "/a", "value": 1}]'::jsonb),
+    (2, '[{"op": "add", "path": "/b", "value": 2}]'::jsonb),
+    (3, '[{"op": "add", "path": "/c", "value": 3}]'::jsonb)
+) as vals(id, patch);
+
+┌─[ RECORD 1 ]────────────────┐
+│ doc │ [                    ↵│
+│     │     {                ↵│
+│     │         "op": "add", ↵│
+│     │         "path": "/a",↵│
+│     │         "value": 1   ↵│
+│     │     },               ↵│
+│     │     {                ↵│
+│     │         "op": "add", ↵│
+│     │         "path": "/b",↵│
+│     │         "value": 2   ↵│
+│     │     },               ↵│
+│     │     {                ↵│
+│     │         "op": "add", ↵│
+│     │         "path": "/c",↵│
+│     │         "value": 3   ↵│
+│     │     }                ↵│
+│     │ ]                     │
+└─────┴───────────────────────┘
