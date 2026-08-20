@@ -22,6 +22,7 @@ def step_fn(acc, patch):
     return p.apply(acc)
 
 doc = reduce(step_fn, patches, {})
+
 print(doc)
 # {'a': 1, 'b': 2}
 
