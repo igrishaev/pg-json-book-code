@@ -535,6 +535,23 @@ full join
 
 -----
 
+
+TODO: test
+
+select id, 10 as rank
+from history
+where
+        entity = 'application'
+    and created_at between ($1::timestamptz and $2::timestamptz)
+    and operation = 'update'
+    and (doc #>> '{application_id}') = '12398'
+
+
+where patch @? '$[*] ? (@.path == "/attrs/status" && @.value == "in_transition") '
+
+
+
+
 with
 layers as (
 
