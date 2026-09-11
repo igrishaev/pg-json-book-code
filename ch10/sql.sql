@@ -25,8 +25,10 @@ return concat_ws(
 );
 
 
-code  org name         user name  comment
-10151 General Acme Inc John Brown reconciliation started for Acme.Inc ref #991015123
+code  org name         user name     comment
+61312 Global Corp      Suzanne Smith reconciliation started ref #991015123
+10151 General Acme Inc John Brown    some long comment about the app
+
 
 
 create index if not exists
@@ -234,7 +236,7 @@ select
 from
     layers
 group by id
-order by 1;
+order by 2;
 
 
 -- no 50
@@ -302,7 +304,7 @@ grouped as (
   from
       layers
   group by id
-  order by 1
+  order by 2
 )
 select
     g.id, a.doc
