@@ -516,6 +516,53 @@ order by coalesce(sub1.rank, sub2.rank, sub3.rank, sub4.rank, sub5.rank);
 ----
 
 
+explain analyze
+with
+step1 as (
+  select
+      coalesce(sub1.id, sub2.id, sub3.id, sub4.id, sub5.id) as id,
+      coalesce(sub1.rank, sub2.rank, sub3.rank, sub4.rank, sub5.rank) as rank
+  from
+  (
+      select id, 10 as rank
+      from applications app
+      where (doc #>> '{application_id}') = '12398'
+  ) as sub1
+  full join
+  (
+      select id, 20 as rank
+      from applications
+      where (doc #>> '{organization.code}') = '12398'
+
+  ) as sub2 on coalesce(sub1.id) = sub2.id
+  full join
+  (
+      select id, 30 as rank
+      from applications
+      where (doc #>> '{application_id}') ilike '%12398%'
+
+  ) as sub3 on coalesce(sub1.id, sub2.id) = sub3.id
+  full join(
+      select id, 40 as rank
+      from applications
+      where (doc #>> '{organization.code}') ilike '%12398%'
+  ) as sub4 on coalesce(sub1.id, sub2.id, sub3.id) = sub4.id
+  full join(
+      select id, 50 as rank
+      from applications
+      where (doc #>> '{comment}') ilike '%12398%'
+  ) as sub5 on coalesce(sub1.id, sub2.id, sub3.id, sub4.id) = sub5.id
+  order by 2
+)
+select
+    step1.id, app.doc
+from
+    step1
+join applications app
+    on step1.id = app.id;
+
+
+
 select
     coalesce(sub1.id, sub2.id, sub3.id, sub4.id, sub5.id) as id,
     coalesce(sub1.doc, sub2.doc, sub3.doc, sub4.doc, sub5.doc) as doc
