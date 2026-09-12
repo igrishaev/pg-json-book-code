@@ -591,7 +591,6 @@ full join
 -----
 
 
-TODO: test
 
 select id, 10 as rank
 from history
@@ -603,6 +602,64 @@ where
 
 
 where patch @? '$[*] ? (@.path == "/attrs/status" && @.value == "in_transition") '
+
+
+
+
+explain analyze
+with
+layers as (
+
+  select id, 10 as rank
+  from applications
+  where (doc #>> '{application_id}') = '12398'
+
+  union all
+
+  select id, 20 as rank
+  from applications
+  where (doc #>> '{organization.code}') = '12398'
+
+  union all
+
+  select id, 30 as rank
+  from applications
+  where (doc #>> '{application_id}') ilike '%12398%'
+
+  union all
+
+  select id, 40 as rank
+  from applications
+  where (doc #>> '{organization.code}') ilike '%12398%'
+
+  union all
+
+  select id, 50 as rank
+  from applications
+  where (doc #>> '{comment}') ilike '%12398%'
+
+  union all
+
+  select pk, 60 as rank
+  from history
+  where
+      entity = 'application'
+  and created_at > now() - interval '1 week'
+  and operation = 'update'
+  and (doc #>> '{organization,short_name}') ilike '%12398%'
+),
+grouped as (
+  select
+      id, min(rank) as rank
+  from
+      layers
+  group by id
+  order by 2
+)
+select
+    g.id, a.doc
+from grouped g
+join applications a on g.id = a.id;
 
 
 
