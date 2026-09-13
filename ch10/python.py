@@ -19,7 +19,8 @@ def to_tsquery(string, op='&'):
     sep = " %s " % (op, )
     return sep.join([word.strip() for word in words])
 
-print(to_tsquery("поле     береза кудрявая"))
+TODO: language!!!!!!!!!
 
+print(to_tsquery("поле     береза кудрявая"))
 
 # поле & береза & кудрявая
