@@ -732,12 +732,40 @@ $$);
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
+select to_tsquery('russian', 'берёза & стояла');
+┌──────────────────┐
+│    to_tsquery    │
+├──────────────────┤
+│ 'берез' & 'стоя' │
+└──────────────────┘
 
 
+select plainto_tsquery('russian', 'во поле берёза стояла');
+┌──────────────────────────┐
+│     plainto_tsquery      │
+├──────────────────────────┤
+│ 'пол' & 'берез' & 'стоя' │
+└──────────────────────────┘
+
+
+alter table applications add column lang text null;
+
+select
+    to_tsvector(coalesce(lang, 'english')::regconfig, 'A cat and a mouse')
+    as tsv
+from
+    applications
+limit
+    1;
+
+┌──────────────────┐
+│       tsv        │
+├──────────────────┤
+│ 'cat':2 'mous':5 │
+└──────────────────┘
 
 select to_tsvector('russian', 'Во поле берёза стояла.')
     @@ to_tsquery('russian', 'берёза & стояла') as res;
-
 ┌─────┐
 │ res │
 ├─────┤
@@ -745,8 +773,12 @@ select to_tsvector('russian', 'Во поле берёза стояла.')
 └─────┘
 
 select to_tsvector('russian', 'Во поле берёза стояла.')
-    @@ to_tsquery('russian', 'берёза & кудрявая') as res;
-
+    @@ to_tsquery('english', 'берёза & кудрявая') as res;
+┌─────┐
+│ res │
+├─────┤
+│ f   │
+└─────┘
 
 
 create index idx_application_comment_tsvector
@@ -839,7 +871,7 @@ select app_detect_lang($${"comment": "fox and bird"}$$::jsonb);
 └─────────────────┘
 
 
-select app_detect_lang($${"comment": "я русский"}$$::jsonb);
+select app_detect_lang($${"comment": "лиса и журавль"}$$::jsonb);
 ┌─────────────────┐
 │ app_detect_lang │
 ├─────────────────┤
