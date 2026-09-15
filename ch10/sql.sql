@@ -769,6 +769,44 @@ where to_tsvector(lang, doc->>'comment') @@ plainto_tsquery(lang, '12398')
 limit 50;
 
 
+where to_tsvector(lang, concat_ws(
+    ', ',
+    doc #>> '{comment}',
+    doc #>> '{description}',
+    doc #>> '{path,to,field}'
+)) @@ plainto_tsquery(lang, '12398')
+
+
+
+create or replace function app_tsvector(doc jsonb, lang regconfig)
+returns tsvector
+language sql immutable strict parallel safe
+return ...;
+
+create index idx_application_comment_tsvector
+on applications
+using gin (app_tsvector(doc, lang));
+
+select id, doc from applications
+where app_tsvector(doc, lang) @@ <query>
+
+
+
+alter table applications
+add column _ts_vect tsvector generated always
+as (app_tsvector(doc, lang)) stored;
+
+
+select id, doc from applications
+where _ts_vect @@ <query>
+
+create table applications_tsvector (
+    app_id uuid primary key references applications(id),
+    tsvect tsvector not null
+);
+
+
+
 update applications
 set lang = app_detect_lang(doc)
 where lang is null;
@@ -912,3 +950,18 @@ from applications limit 10;
 │ '116149':3 'comment':1 'number':2 │
 │ '116150':3 'comment':1 'number':2 │
 └───────────────────────────────────┘
+
+
+select to_tsvector(
+    'russian',
+    'Все животные равны но некоторые животные равнее других'
+) || to_tsvector(
+    'english',
+    'All animals are equal, but some animals are more equal than others'
+) as vec;
+
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                                        vec                                         │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ 'anim':10,15 'equal':12,18 'other':20 'друг':8 'животн':2,6 'некотор':5 'равн':3,7 │
+└────────────────────────────────────────────────────────────────────────────────────┘
