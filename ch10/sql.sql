@@ -750,19 +750,28 @@ select plainto_tsquery('russian', 'во поле берёза стояла');
 
 alter table applications add column lang text null;
 
+alter table applications add column lang regconfig null;
+
+update applications set lang = 'english';
+
 select
-    to_tsvector(coalesce(lang, 'english')::regconfig, 'A cat and a mouse')
-    as tsv
+    to_tsvector(lang, doc->>'comment')
+    as ts_v
 from
     applications
 limit
-    1;
+    3;
 
-┌──────────────────┐
-│       tsv        │
-├──────────────────┤
-│ 'cat':2 'mous':5 │
-└──────────────────┘
+
+select id, 50 as rank
+from applications
+where to_tsvector(lang, doc->>'comment') @@ plainto_tsquery(lang, '12398')
+limit 50;
+
+
+update applications
+set lang = app_detect_lang(doc)
+where lang is null;
 
 select to_tsvector('russian', 'Во поле берёза стояла.')
     @@ to_tsquery('russian', 'берёза & стояла') as res;
