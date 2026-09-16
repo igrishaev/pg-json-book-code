@@ -3,24 +3,10 @@ import langdetect
 
 from langdetect import detect, detect_langs
 
-text = "Во поле берёза стояла."
+text = "Все животные равны, но некоторые животные равнее других"
 
 print(detect(text))
 print(detect_langs(text))
 
 # ru
 # [ru:0.9999961866373268]
-
-
-import re
-
-def to_tsquery(string, op='&'):
-    words = re.split(r'[\s,]+', string)
-    sep = " %s " % (op, )
-    return sep.join([word.strip() for word in words])
-
-TODO: language!!!!!!!!!
-
-print(to_tsquery("поле     береза кудрявая"))
-
-# поле & береза & кудрявая
