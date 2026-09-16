@@ -524,48 +524,48 @@ order by coalesce(sub1.rank, sub2.rank, sub3.rank, sub4.rank, sub5.rank);
 
 explain analyze
 with
-step1 as (
+matrix as (
   select
       coalesce(sub1.id, sub2.id, sub3.id, sub4.id, sub5.id) as id,
       coalesce(sub1.rank, sub2.rank, sub3.rank, sub4.rank, sub5.rank) as rank
-  from
-  (
+  from (
       select id, 10 as rank
       from applications app
       where (doc #>> '{application_id}') = '12398'
   ) as sub1
-  full join
-  (
+
+  full join (
       select id, 20 as rank
       from applications
       where (doc #>> '{organization.code}') = '12398'
-
   ) as sub2 on coalesce(sub1.id) = sub2.id
-  full join
-  (
+
+  full join (
       select id, 30 as rank
       from applications
       where (doc #>> '{application_id}') ilike '%12398%'
-
   ) as sub3 on coalesce(sub1.id, sub2.id) = sub3.id
-  full join(
+
+  full join (
       select id, 40 as rank
       from applications
       where (doc #>> '{organization.code}') ilike '%12398%'
   ) as sub4 on coalesce(sub1.id, sub2.id, sub3.id) = sub4.id
-  full join(
+
+  full join (
       select id, 50 as rank
       from applications
       where (doc #>> '{comment}') ilike '%12398%'
   ) as sub5 on coalesce(sub1.id, sub2.id, sub3.id, sub4.id) = sub5.id
+
   order by 2
 )
 select
-    step1.id, app.doc
+    matrix.id, app.doc
 from
-    step1
+    matrix
 join applications app
-    on step1.id = app.id;
+    on matrix.id = app.id;
 
 
 
