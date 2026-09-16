@@ -820,7 +820,7 @@ select to_tsvector('russian', 'Во поле берёза стояла.')
 └─────┘
 
 select to_tsvector('russian', 'Во поле берёза стояла.')
-    @@ to_tsquery('english', 'берёза & кудрявая') as res;
+    @@ to_tsquery('english', 'берёза & стояла') as res;
 ┌─────┐
 │ res │
 ├─────┤
@@ -965,3 +965,47 @@ select to_tsvector(
 ├────────────────────────────────────────────────────────────────────────────────────┤
 │ 'anim':10,15 'equal':12,18 'other':20 'друг':8 'животн':2,6 'некотор':5 'равн':3,7 │
 └────────────────────────────────────────────────────────────────────────────────────┘
+
+
+select to_tsvector(
+    'russian',
+    'Все животные равны но некоторые животные равнее других'
+) || to_tsvector(
+    'english',
+    'All animals are equal, but some animals are more equal than others'
+) @@ plainto_tsquery('russian', 'животные равны') as res;
+┌─────┐
+│ res │
+├─────┤
+│ t   │
+└─────┘
+
+
+select to_tsvector(
+    'russian',
+    'Все животные равны но некоторые животные равнее других'
+) || to_tsvector(
+    'english',
+    'All animals are equal, but some animals are more equal than others'
+) @@ plainto_tsquery('english', 'animal equal') as res;
+┌─────┐
+│ res │
+├─────┤
+│ t   │
+└─────┘
+
+
+select <res> @@ plainto_tsquery('russian', 'животные равны') as res;
+┌─────┐
+│ res │
+├─────┤
+│ t   │
+└─────┘
+
+
+select <res> @@ plainto_tsquery('english', 'animal equal') as res;
+┌─────┐
+│ res │
+├─────┤
+│ t   │
+└─────┘
