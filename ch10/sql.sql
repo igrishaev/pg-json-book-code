@@ -659,7 +659,6 @@ layers as (
   where
       entity = 'application'
   and created_at > now() - interval '1 week'
-  and operation = 'update'
   and (doc #>> '{organization,short_name}') ilike '%12398%'
 ),
 grouped as (
