@@ -4,6 +4,20 @@ select
 from
     applications
 where
+        (doc #>> '{application_id}')          =     '12345'
+    and (doc #>> '{organization,short_name}') ilike '%acme%'
+    and (doc #>> '{created_by,name}')         ilike '%maria%'
+    and (doc #>> '{comment}')                 ilike '%reconciliation%'
+limit
+    100;
+
+
+
+select
+    id, doc
+from
+    applications
+where
        (doc #>> '{application_id}')          ilike '%12398%'
     or (doc #>> '{organization,short_name}') ilike '%12398%'
     or (doc #>> '{created_by,name}')         ilike '%12398%'
