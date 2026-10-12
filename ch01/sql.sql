@@ -205,6 +205,9 @@ select * from payments where id = '...'
 
 delete from payments where id = '...'
 
+update payments
+set doc['attrs']['amount'] = to_jsonb(10550)
+where id = ...
 
 select * from payments
 where amount = 10000
