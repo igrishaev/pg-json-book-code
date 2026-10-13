@@ -24,6 +24,28 @@ profile.extra_data = {
 }
 profile.save()
 
+
+from django.db import models
+import jsonfield
+
+class Profile(models.Model):
+    user_id = models.ForeignKey(User)
+    created_at = models.DateTimeField()
+    is_active = models.BooleanField()
+    extra_data = jsonfield.JSONField()
+
+# Google auth pipeline
+
+oauth_resp = google_client.get_resp(...)
+profile = Profile.objects.get(id=123)
+
+profile.extra_data["google_id"] = oauth_resp.id
+profile.extra_data["google_url"] = oauth_resp.user_url
+profile.extra_data["google_avator"] = oauth_resp.picture_url
+
+profile.save()
+
+
 from collections import UserDict
 
 class TrackingDict(UserDict):
