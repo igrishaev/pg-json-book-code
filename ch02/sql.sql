@@ -690,3 +690,13 @@ from
 │         2 │ Dostoevsky  │      30 │ Crime and Punishment │
 │         2 │ Dostoevsky  │      40 │ The idiot            │
 └───────────┴─────────────┴─────────┴──────────────────────┘
+
+user['age'] = '30'::jsonb
+user['age'] = to_jsonb(30)
+
+update goods set
+    attrs['processor.family'] = to_jsonb('ARM M4')
+where id = 2
+returning *;
+
+'"ARM M4"'
