@@ -519,8 +519,8 @@ where doc #>> '{organization,id}' = '00000000-0000-0000-0000-000000000001';
 
 
 update applications set
-    doc['status'] = '"deleted"',
-    doc['updated_at'] = '"2026-01-02T09:46:12Z"',
+    doc['status'] = to_jsonb('deleted'),
+    doc['updated_at'] = '"2026-01-02T09:46:12Z"'::jsonb,
     doc['comment'] = '"Deleting this application"'
 where
     id = '00000000-0000-0000-0000-000000500001';
@@ -552,7 +552,7 @@ where id = '00000000-0000-0000-0000-000000500001';
 
 
 update applications set
-    doc['departments'][-1]['users'][-1]['name'] = '"Last User"'
+    doc['departments'][-1]['users'][-1]['name'] = to_jsonb('Last User')
 where id = '00000000-0000-0000-0000-000000500001';
 
 
