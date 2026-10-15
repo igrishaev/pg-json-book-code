@@ -314,7 +314,7 @@ select (array['a', 'b', 'c'])[ceil(random() * 3)] from generate_series(1, 10);
 │ c     │
 └───────┘
 
-now() - interval '1 day' * random() * 365
+(now() - interval '1 year' * random())
 
 create or replace function gen_uuid(x integer)
 returns uuid
@@ -360,7 +360,7 @@ select
     jsonb_build_object(
         'id', gen_uuid(x),
         'status', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
-        'created_at', (now() - interval '1 day' * random() * 365),
+        'created_at', (now() - interval '1 year' * random()),
         'created_by', jsonb_build_object(
             'id', gen_uuid(x % 1000),
             'email', (format('user_%s@test.com', to_char(x % 1000, 'FM0000'))),
@@ -428,22 +428,22 @@ select
         'journal', jsonb_build_array(
             jsonb_build_object(
                 'event', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
-                'datetime', (now() - interval '1 day' * random() * 365),
+                'datetime', (now() - interval '1 year' * random()),
                 'user_id', uuid_generate_v4()
             ),
             jsonb_build_object(
                 'event', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
-                'datetime', (now() - interval '1 day' * random() * 365),
+                'datetime', (now() - interval '1 year' * random()),
                 'user_id', uuid_generate_v4()
             ),
             jsonb_build_object(
                 'event', ((array['active', 'pending', 'approved', 'deleted'])[ceil(random() * 4)]),
-                'datetime', (now() - interval '1 day' * random() * 365),
+                'datetime', (now() - interval '1 year' * random()),
                 'user_id', uuid_generate_v4()
             )
         )
     ),
-    (now() - interval '1 day' * random() * 365)
+    (now() - interval '1 year' * random())
 from
     generate_series(1, 1000000) as seq(x);
 
