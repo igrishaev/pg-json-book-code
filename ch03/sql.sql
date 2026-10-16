@@ -665,6 +665,15 @@ delete from applications
 where id = '00000000-0000-0000-0000-000000500005'
 returning doc;
 
+
+with deleted as (
+    delete from applications
+    where id = '00000000-0000-0000-0000-000000500005'
+    returning *
+)
+insert into applications_backup
+select * from deleted;
+
 delete from applications
 where doc->>'status' = 'deleted';
 -- DELETE 249656
