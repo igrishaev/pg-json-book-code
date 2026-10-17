@@ -79,6 +79,10 @@ using btree (created_at desc);
 
 analyze applications;
 
+drop index if exists idx_applications_created_at;
+
+alter table applications alter column id set default uuidv7();
+
 explain
 select id, doc from applications
 order by created_at desc
