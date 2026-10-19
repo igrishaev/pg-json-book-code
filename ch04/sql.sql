@@ -996,9 +996,9 @@ limit
 │ Planning Time: 1.042 ms                                                                                                                                                                                                                                                         │
 │ Execution Time: 3.050 ms
 
-(field1 ilike 'pattern') or (field2 ilike 'pattern') or ...
+(field1 ilike pattern) or (field2 ilike pattern) or ...
 
-(field1 || ' ' || field1 || ...) ilike 'pattern'
+(field1 || ' ' || field1 || ...) ilike pattern
 
 (
        (doc #>> '{application_id}') || ' '
@@ -1444,3 +1444,25 @@ book=# select '2025-01-01T12:00:00z'::timestamptz;
 ┌─[ RECORD 1 ]┬────────────────────────┐
 │ timestamptz │ 2025-01-01 07:00:00-05 │
 └─────────────┴────────────────────────┘
+
+select id, doc from applications
+where
+     (doc->>'status') = 'active'
+ and (doc->>'assigned_to') = 'user_999@test.com'
+ and (doc->>'credit_type') = 'org';
+
+
+
+
+analyze applications;
+
+
+SELECT pg_size_pretty(pg_total_relation_size('idx_applications_status_assigned_to'));
+┌─[ RECORD 1 ]───┬─────────┐
+│ pg_size_pretty │ 7416 kB │
+└────────────────┴─────────┘
+
+SELECT pg_size_pretty(pg_total_relation_size('idx_applications_assigned_to_active'));
+┌─[ RECORD 1 ]───┬────────┐
+│ pg_size_pretty │ 384 kB │
+└────────────────┴────────┘
