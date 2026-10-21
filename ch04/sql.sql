@@ -1016,6 +1016,29 @@ limit
 )
 
 
+create index if not exists
+idx_applications_application_trgm_pattern
+on applications using gin
+((
+       coalesce((doc #>> '{application_id}'), '') || ' '
+    || coalesce((doc #>> '{organization,short_name}'), '') || ' '
+    || coalesce((doc #>> '{created_by,name}'), '') || ' '
+    || coalesce((doc #>> '{comment}'), '')
+) gin_trgm_ops);
+
+
+
+create or replace function application_search_pattern(doc jsonb)
+returns text
+language sql immutable strict parallel safe
+return (
+       coalesce((doc #>> '{application_id}'), '') || ' '
+    || coalesce((doc #>> '{organization,short_name}'), '') || ' '
+    || coalesce((doc #>> '{created_by,name}'), '') || ' '
+    || coalesce((doc #>> '{comment}'), '')
+);
+
+
 concat_ws(
     ' ',
     (doc #>> '{application_id}'),
@@ -1166,6 +1189,20 @@ select id from applications
 where application_search_pattern(doc) ilike '%12345%'
 limit 100;
 
+analyze applications;
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                         QUERY PLAN                                                                         │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=104.77..522.57 rows=99 width=16) (actual time=1.553..1.915 rows=20 loops=1)                                                                   │
+│   ->  Bitmap Heap Scan on applications  (cost=104.77..522.57 rows=99 width=16) (actual time=1.550..1.907 rows=20 loops=1)                                  │
+│         Recheck Cond: (application_search_pattern(doc) ~~* '%12345%'::text)                                                                                │
+│         Heap Blocks: exact=13                                                                                                                              │
+│         ->  Bitmap Index Scan on idx_applications_application_trgm_pattern  (cost=0.00..104.74 rows=99 width=0) (actual time=1.217..1.217 rows=20 loops=1) │
+│               Index Cond: (application_search_pattern(doc) ~~* '%12345%'::text)                                                                            │
+│ Planning Time: 0.842 ms                                                                                                                                    │
+│ Execution Time: 1.970 ms                                                                                                                                   │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 create or replace function application_search_pattern(doc jsonb)
 returns text
@@ -1255,10 +1292,6 @@ limit 100;
 
 select id from applications
 where doc ? 'application_id'
-limit 10;
-
-select id from applications
-where doc ?& '{application_id,status,amounts}'
 limit 10;
 
 select id from applications
@@ -1414,36 +1447,15 @@ using btree (
 
 
 
-book=# SET timezone TO 'America/New_York';
-SET
-book=# select '2025-01-01'::timestamptz;
-┌─[ RECORD 1 ]┬────────────────────────┐
-│ timestamptz │ 2025-01-01 00:00:00-05 │
-└─────────────┴────────────────────────┘
+set timezone to 'America/New_York';
+select '2025-01-01'::timestamptz;
+-- 2025-01-01 00:00:00-05
 
-book=# select '2025-01-01T12:00:00'::timestamptz;
-┌─[ RECORD 1 ]┬────────────────────────┐
-│ timestamptz │ 2025-01-01 12:00:00-05 │
-└─────────────┴────────────────────────┘
 
-book=# SET timezone TO 'Europe/London';
-SET
-book=# select '2025-01-01T12:00:00'::timestamptz;
-┌─[ RECORD 1 ]┬────────────────────────┐
-│ timestamptz │ 2025-01-01 12:00:00+00 │
-└─────────────┴────────────────────────┘
+set timezone to 'Europe/Moscow';
+select '2025-01-01'::timestamptz;
+-- 2025-01-01 00:00:00+03
 
-book=# select '2025-01-01T12:00:00z'::timestamptz;
-┌─[ RECORD 1 ]┬────────────────────────┐
-│ timestamptz │ 2025-01-01 12:00:00+00 │
-└─────────────┴────────────────────────┘
-
-book=# SET timezone TO 'America/New_York';
-SET
-book=# select '2025-01-01T12:00:00z'::timestamptz;
-┌─[ RECORD 1 ]┬────────────────────────┐
-│ timestamptz │ 2025-01-01 07:00:00-05 │
-└─────────────┴────────────────────────┘
 
 select id, doc from applications
 where
@@ -1466,3 +1478,67 @@ SELECT pg_size_pretty(pg_total_relation_size('idx_applications_assigned_to_activ
 ┌─[ RECORD 1 ]───┬────────┐
 │ pg_size_pretty │ 384 kB │
 └────────────────┴────────┘
+
+
+alter table applications alter column id set default uuidv7();
+alter table applications drop column created_at;
+
+
+create table applications2 (
+    id uuid primary key default uuidv7(),
+    doc jsonb compression lz4 not null,
+    updated_at timestamptz
+);
+
+
+insert into applications2 (id, doc)
+select
+    uuidv7(interval '-1 year' * random()),
+    jsonb_build_object('foo', x)
+from
+    generate_series(1, 1000000) as seq(x);
+
+analyze applications2;
+
+select id, uuid_extract_timestamp(id) at time zone 'UTC' ts
+from applications2 order by id;
+
+┌──────────────────────────────────────┬─────────────────────────┐
+│                  id                  │           ts            │
+├──────────────────────────────────────┼─────────────────────────┤
+│ 019a1c1c-a0a4-782f-aad5-25bab5ef49f4 │ 2025-10-25 16:03:49.54  │
+│ 019a2738-bbc0-7b53-a400-6b807e7c6708 │ 2025-10-27 19:50:20.864 │
+│ 019a4605-178d-7e01-8804-b3106bee11fb │ 2025-11-02 19:22:10.189 │
+│ 019a5bed-de0d-778e-943e-634b3b30b414 │ 2025-11-07 01:28:26.893 │
+│ 019a6e1b-1584-7bbb-8799-9d4e4ffcce0d │ 2025-11-10 14:11:00.1   │
+│ 019a7bf1-98f1-7752-aefd-05e19ca5d75d │ 2025-11-13 06:40:22.257 │
+│ 019a821e-4cbd-7b43-8678-aead01f9b8ac │ 2025-11-14 11:26:55.165 │
+│ 019a8784-e71d-7e53-87a0-00c0fd3aff89 │ 2025-11-15 12:37:05.437 │
+│ 019a9584-41f4-7d02-97e8-7ebb0423aeea │ 2025-11-18 05:51:04.18  │
+│ 019aa619-3f37-7f6e-9227-cc3654ceec94 │ 2025-11-21 11:07:43.799 │
+│ 019adfec-549a-79da-9e57-8dd39d40ef5d │ 2025-12-02 16:36:38.682 │
+│ 019af056-bfa7-7b09-beb2-b30d6235f4ea │ 2025-12-05 21:06:48.359 │
+│ 019af70c-e93a-78b9-802f-94e0e3cb285b │ 2025-12-07 04:23:29.85  │
+│ 019afcd4-eac7-7ae3-893b-698b124694b0 │ 2025-12-08 07:20:03.527 │
+
+
+explain analyze
+select id, uuid_extract_timestamp(id) as ts, doc
+from applications2
+where id between uuidv7(interval '-3 days') and uuidv7(interval '-2 days')
+order by id
+limit 1000;
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                         QUERY PLAN                                                                         │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Limit  (cost=0.42..738.36 rows=1000 width=50) (actual time=615.329..616.286 rows=1000.00 loops=1)                                                          │
+│   Buffers: shared hit=997350                                                                                                                               │
+│   ->  Index Scan using applications2_pkey on applications2  (cost=0.42..82000.72 rows=111122 width=50) (actual time=615.328..616.252 rows=1000.00 loops=1) │
+│         Filter: ((id >= uuidv7('-3 days'::interval)) AND (id <= uuidv7('-2 days'::interval)))                                                              │
+│         Rows Removed by Filter: 991668                                                                                                                     │
+│         Index Searches: 1                                                                                                                                  │
+│         Buffers: shared hit=997350                                                                                                                         │
+│ Planning Time: 0.149 ms                                                                                                                                    │
+│ Execution Time: 616.327 ms                                                                                                                                 │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
