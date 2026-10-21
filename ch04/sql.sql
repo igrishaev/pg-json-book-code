@@ -1494,7 +1494,7 @@ create table applications2 (
 insert into applications2 (id, doc)
 select
     uuidv7(interval '-1 year' * random()),
-    jsonb_build_object('foo', x)
+    jsonb_build_object(...)
 from
     generate_series(1, 1000000) as seq(x);
 
