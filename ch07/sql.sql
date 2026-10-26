@@ -1185,6 +1185,15 @@ $functions$;
 copy applications (id, doc, created_at) to '/Users/ivan/work/pg-json-book-code/applications.csv' with (format csv, header on);
 -- 2GB
 
+copy (
+    select id, doc, created_at
+    from applications
+    where doc @@ '$.status == "active" '
+)
+    to '/path/to/applications_active.csv'
+    with (format csv, header on);
+
+
 
 copy (
 
