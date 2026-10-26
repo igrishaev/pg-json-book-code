@@ -971,7 +971,8 @@ begin
         'user_id', user_id::text,
         'datetime', now()::text
     );
-    return doc || jsonb_build_object('journal', journal);
+    doc['journal'] = journal;
+    return doc;
 end;
 $$;
 
